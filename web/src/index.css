@@ -959,3 +959,23 @@ a {
   width: 100%;
   height: auto;
 }
+
+.policy {
+  max-width: 760px;
+  line-height: 1.6;
+}
+.policy label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.policy textarea {
+  width: 100%;
+  min-height: 160px;
+  font: inherit;
+  padding: 12px;
+  color: inherit;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}

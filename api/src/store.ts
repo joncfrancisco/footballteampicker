@@ -5,6 +5,9 @@ import {
   GetCommand,
   PutCommand,
   QueryCommand,
+  UpdateCommand,
+  BatchGetCommand,
+  type BatchGetCommandInput,
 } from "@aws-sdk/lib-dynamodb";
 import type { ListInput, Team } from "@ftp/shared";
 
@@ -25,6 +28,7 @@ export type CharacterSnapshot = { name: string; twoWay: boolean; atlasIndex: num
 
 /** A saved team (`TEAM#<id>` / `META`): immutable once written. */
 export type StoredTeam = Team & {
+  hidden?: boolean;
   schema: 1;
   id: string;
   listVersion: number;
@@ -36,6 +40,7 @@ export type StoredTeam = Team & {
 };
 
 export type StoredReport = {
+  status?: "open" | "resolved";
   targetId: string;
   targetType: "list" | "team";
   reason: string;
@@ -62,7 +67,9 @@ export interface Store {
   getTeam(id: string): Promise<StoredTeam | null>;
   /** Teams are immutable: fails if the id exists. */
   putTeam(team: StoredTeam): Promise<void>;
-  putReport(report: StoredReport): Promise<void>;
+  putReport(report: StoredReport): Promise<boolean>;
+  reportCount(type: "list" | "team", id: string): Promise<number>;
+  hideList(id: string): Promise<boolean>;
   /** Public, non-hidden lists, newest first (GSI1), for the browse index. */
   publicLists(): Promise<StoredList[]>;
 }
@@ -87,6 +94,7 @@ export class MemoryStore implements Store {
   }
   async putList(list: StoredList, expectVersion?: number) {
     const current = this.lists.get(list.id);
+    if (current?.hidden) throw new VersionConflict(list.id);
     if (expectVersion === undefined ? current : current?.version !== expectVersion)
       throw new VersionConflict(list.id);
     this.lists.set(list.id, structuredClone(list));
@@ -102,7 +110,31 @@ export class MemoryStore implements Store {
     this.teams.set(team.id, structuredClone(team));
   }
   async putReport(report: StoredReport) {
-    this.reports.push(report);
+    if (
+      this.reports.some(
+        (r) =>
+          r.targetType === report.targetType &&
+          r.targetId === report.targetId &&
+          r.ipHash === report.ipHash &&
+          r.status !== "resolved",
+      )
+    )
+      return false;
+    this.reports.push({ ...report, status: "open" });
+    return true;
+  }
+  async reportCount(type: "list" | "team", id: string) {
+    return new Set(
+      this.reports
+        .filter((r) => r.targetType === type && r.targetId === id && r.status !== "resolved")
+        .map((r) => r.ipHash),
+    ).size;
+  }
+  async hideList(id: string) {
+    const list = this.lists.get(id);
+    if (!list || list.hidden) return false;
+    this.lists.set(id, { ...list, hidden: true, version: list.version + 1 });
+    return true;
   }
   async publicLists() {
     return [...this.lists.values()]
@@ -152,7 +184,11 @@ export class DynamoStore implements Store {
 
   async getList(id: string) {
     const r = await this.db.send(
-      new GetCommand({ TableName: this.table, Key: { PK: `LIST#${id}`, SK: "META" } }),
+      new GetCommand({
+        TableName: this.table,
+        Key: { PK: `LIST#${id}`, SK: "META" },
+        ConsistentRead: true,
+      }),
     );
     return r.Item ? strip<StoredList>(r.Item) : null;
   }
@@ -172,8 +208,10 @@ export class DynamoStore implements Store {
           ...(expectVersion === undefined
             ? { ConditionExpression: "attribute_not_exists(PK)" }
             : {
-                ConditionExpression: "version = :v",
-                ExpressionAttributeValues: { ":v": expectVersion },
+                ConditionExpression:
+                  "version = :v AND (attribute_not_exists(#hidden) OR #hidden = :no)",
+                ExpressionAttributeNames: { "#hidden": "hidden" },
+                ExpressionAttributeValues: { ":v": expectVersion, ":no": false },
               }),
         }),
       );
@@ -212,12 +250,66 @@ export class DynamoStore implements Store {
   }
 
   async putReport(report: StoredReport) {
-    await this.db.send(
-      new PutCommand({
-        TableName: this.table,
-        Item: { PK: `REPORT#${report.targetId}`, SK: report.createdAt, ...report },
-      }),
-    );
+    try {
+      await this.db.send(
+        new PutCommand({
+          TableName: this.table,
+          Item: {
+            PK: `REPORT#${report.targetType}#${report.targetId}`,
+            SK: report.ipHash,
+            ...report,
+            status: "open",
+          },
+          ConditionExpression: "attribute_not_exists(PK) OR #status = :resolved",
+          ExpressionAttributeNames: { "#status": "status" },
+          ExpressionAttributeValues: { ":resolved": "resolved" },
+        }),
+      );
+      return true;
+    } catch (e) {
+      if (e instanceof ConditionalCheckFailedException) return false;
+      throw e;
+    }
+  }
+  async reportCount(type: "list" | "team", id: string) {
+    let total = 0;
+    let start: Record<string, unknown> | undefined;
+    do {
+      const result = await this.db.send(
+        new QueryCommand({
+          TableName: this.table,
+          KeyConditionExpression: "PK = :pk",
+          FilterExpression: "#status = :open",
+          ExpressionAttributeNames: { "#status": "status" },
+          ExpressionAttributeValues: { ":pk": `REPORT#${type}#${id}`, ":open": "open" },
+          ConsistentRead: true,
+          Select: "COUNT",
+          ExclusiveStartKey: start,
+        }),
+      );
+      total += result.Count ?? 0;
+      start = result.LastEvaluatedKey;
+    } while (start);
+    return total;
+  }
+  async hideList(id: string) {
+    try {
+      await this.db.send(
+        new UpdateCommand({
+          TableName: this.table,
+          Key: { PK: `LIST#${id}`, SK: "META" },
+          UpdateExpression: "SET #hidden = :yes, version = version + :one REMOVE GSI1PK, GSI1SK",
+          ConditionExpression:
+            "attribute_exists(PK) AND (attribute_not_exists(#hidden) OR #hidden = :no)",
+          ExpressionAttributeNames: { "#hidden": "hidden" },
+          ExpressionAttributeValues: { ":yes": true, ":no": false, ":one": 1 },
+        }),
+      );
+      return true;
+    } catch (e) {
+      if (e instanceof ConditionalCheckFailedException) return false;
+      throw e;
+    }
   }
 
   async publicLists() {
@@ -237,7 +329,29 @@ export class DynamoStore implements Store {
       out.push(...(r.Items ?? []).map((i) => strip<StoredList>(i)));
       start = r.LastEvaluatedKey;
     } while (start);
-    return out;
+    // A GSI is eventually consistent. Recheck candidates on the base table so a stale
+    // index entry can never republish a hidden or newly unlisted list.
+    const current: StoredList[] = [];
+    for (let i = 0; i < out.length; i += 100) {
+      let pending: NonNullable<BatchGetCommandInput["RequestItems"]> = {
+        [this.table]: {
+          Keys: out.slice(i, i + 100).map((l) => ({ PK: `LIST#${l.id}`, SK: "META" })),
+          ConsistentRead: true,
+        },
+      };
+      for (let attempt = 0; Object.keys(pending).length; attempt++) {
+        if (attempt === 4) throw new Error("Browse verification was throttled");
+        if (attempt) await new Promise((resolve) => setTimeout(resolve, 50 * 2 ** attempt));
+        const response = await this.db.send(new BatchGetCommand({ RequestItems: pending }));
+        current.push(
+          ...(response.Responses?.[this.table] ?? []).map((item) => strip<StoredList>(item)),
+        );
+        pending = response.UnprocessedKeys ?? {};
+      }
+    }
+    return current
+      .filter((l) => l.visibility === "public" && !l.hidden)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
 }
 

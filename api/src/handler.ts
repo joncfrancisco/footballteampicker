@@ -6,6 +6,7 @@ import { S3Publisher } from "./publish";
 import { DynamoStore } from "./store";
 import type { Event, Result } from "./types";
 import { Media, S3Media } from "./media";
+import { reportNotifier } from "./notifications";
 
 export type { Event, Result };
 
@@ -30,7 +31,8 @@ export async function handler(event: Event): Promise<Result> {
         hostname: env("SITE_HOSTNAME"),
       }),
       seeds: [CharacterList.parse(lol)],
-      ipSalt: process.env.IP_SALT,
+      reporterSalt: ssmSecret("/footballteampicker/ip-salt"),
+      notifyReport: reportNotifier(env("ALERTS_TOPIC"), env("SITE_HOSTNAME")),
     });
   }
   return api(event);

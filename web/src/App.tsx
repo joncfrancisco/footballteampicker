@@ -9,6 +9,7 @@ import { Catalog, ListPage, NotFound } from "./Catalog";
 import { TeamPage, RemixBuilder } from "./TeamPage";
 import { ShareMenu } from "./ShareMenu";
 import { EditorPage } from "./editor/Editor";
+import { About, ReportPage } from "./Policy";
 
 // ?fill=demo (&sections=1) is for screenshots and checks; it never touches the saved draft.
 const params = () => new URLSearchParams(window.location.search);
@@ -33,7 +34,11 @@ export function App() {
         </nav>
       </header>
       <main>
-        {path === "/new" ? (
+        {path === "/about" ? (
+          <About />
+        ) : path === "/report" ? (
+          <ReportPage />
+        ) : path === "/new" ? (
           <EditorPage remix={params().get("remix") ?? undefined} />
         ) : editing ? (
           <EditorPage id={editing[1]!} />
@@ -62,7 +67,12 @@ export function App() {
           <NotFound />
         )}
       </main>
-      <footer className="disclaimer">{SEED_LISTS[0]!.disclaimer}</footer>
+      <footer className="disclaimer">
+        <p>
+          <a href="/about">About &amp; content rules</a>
+        </p>
+        {SEED_LISTS[0]!.disclaimer}
+      </footer>
     </>
   );
 }

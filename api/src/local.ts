@@ -25,6 +25,7 @@ const api = createApi({
   publish,
   human: turnstile({ secret: async () => TEST_SECRET, hostname: "localhost" }),
   seeds: [CharacterList.parse(lol)],
+  ipSalt: "local-development-only",
 });
 
 createServer(async (req, res) => {

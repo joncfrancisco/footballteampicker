@@ -49,6 +49,12 @@ data "aws_iam_policy_document" "api" {
     resources = ["${aws_s3_bucket.media.arn}/m/*", "${aws_s3_bucket.media.arn}/tmp/*"]
   }
 
+  statement {
+    sid       = "NotifyModerators"
+    actions   = ["sns:Publish"]
+    resources = [aws_sns_topic.alerts.arn]
+  }
+
   # Turnstile secret and IP salt are SecureStrings set out of band, never in Terraform state.
   statement {
     sid       = "Secrets"
@@ -103,6 +109,7 @@ resource "aws_lambda_function" "api" {
       MEDIA_BUCKET           = aws_s3_bucket.media.bucket
       TURNSTILE_SECRET_PARAM = "/footballteampicker/turnstile-secret"
       SITE_HOSTNAME          = var.domain
+      ALERTS_TOPIC           = aws_sns_topic.alerts.arn
     }
   }
 

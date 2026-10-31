@@ -1,0 +1,10 @@
+#!/usr/bin/env node
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import process from "node:process";
+const result = spawnSync(
+  process.execPath,
+  ["--import", "tsx", fileURLToPath(new URL("../api/src/moderation.ts", import.meta.url)), "queue"],
+  { stdio: "inherit" },
+);
+process.exitCode = result.status ?? 1;

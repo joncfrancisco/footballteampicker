@@ -106,6 +106,19 @@ the current version as an optimistic concurrency check. Custom lists require 11�
 a verified seed remix may retain the seed's larger roster and its required disclaimer. Old
 atlases remain after edits and list deletion because saved teams still reference them.
 
+## Moderation
+
+Reports, auto-hide, operator takedown/restore, and the policy are documented in
+[MODERATION.md](MODERATION.md). Alerts use SNS `footballteampicker-alerts`
+(`arn:aws:sns:us-east-1:020949219706:footballteampicker-alerts`); its email subscription
+requires manual confirmation. The API has only `sns:Publish` on this topic. The bootstrap
+boundary's matching permission was added out of band; Terraform cannot change the boundary.
+Reporter hashes use the out-of-band SecureString `/footballteampicker/ip-salt`.
+
+User-uploaded fan art of third-party characters is expected, and takedown requests are honored
+within days. Quarantined portraits are private recovery copies under `private/takedown/`.
+CloudFront's object permission is restricted to `m/*`; it cannot read that recovery prefix.
+
 ## Deploys (`.github/workflows/deploy.yml`)
 
 Push to `main` → CI (`ci.yml`) → in the `production` environment: build, `terraform apply`
