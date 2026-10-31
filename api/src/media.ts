@@ -46,13 +46,19 @@ export class Media {
     });
     return { key, uploadToken, ...(await this.objects.presign(key, contentType)) };
   }
-  async finish(listId: string, atlas: ListInput["atlas"], token?: string) {
+  async finish(
+    listId: string,
+    atlas: ListInput["atlas"],
+    token?: string,
+    onAuthorized?: () => Promise<void>,
+  ) {
     if (
       !token ||
       !atlas.key.startsWith("tmp/") ||
       !(await this.store.claimUpload(atlas.key, sha256(token), this.now()))
     )
       throw new InvalidUpload("Upload session is missing, expired, or already used");
+    await onAuthorized?.();
     let object: ObjectData;
     try {
       object = await this.objects.get(atlas.key);

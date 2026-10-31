@@ -128,6 +128,44 @@ describe("human check", () => {
   });
 });
 
+describe("hourly rate limits", () => {
+  it.each([
+    ["/api/lists", 50, () => LIST],
+    ["/api/uploads", 50, () => ({ contentType: "image/webp" })],
+    ["/api/teams", 200, () => lolTeam()],
+    ["/api/reports", 20, () => ({ targetType: "list", targetId: seed.id, reason: "Test report" })],
+  ] as const)(
+    "caps %s after verified requests and returns Retry-After",
+    async (path, limit, body) => {
+      const accepted = await Promise.all(
+        Array.from({ length: limit }, () => api(req("POST", path, body()))),
+      );
+      expect(accepted.every((r) => [201, 204].includes(r.statusCode!))).toBe(true);
+      const blocked = await api(req("POST", path, body()));
+      expect(blocked.statusCode).toBe(429);
+      expect(blocked.headers?.["retry-after"]).toBe("3600");
+      expect([...store.rates.keys()].every((key) => !key.includes("198.51.100.1"))).toBe(true);
+      expect(
+        (await api(req("POST", path, body(), { "x-forwarded-for": "198.51.100.2" }))).statusCode,
+      ).not.toBe(429);
+    },
+  );
+  it("doesn't count failed verification and starts a fresh window the next hour", async () => {
+    await call("POST", "/api/teams", lolTeam(), { "x-turnstile-token": "bad" });
+    expect(store.rates.size).toBe(0);
+    for (let i = 0; i < 200; i++) await call("POST", "/api/teams", lolTeam());
+    const next = createApi({
+      store,
+      publish,
+      human,
+      seeds: [seed],
+      ipSalt: "test-only-salt",
+      now: () => new Date("2026-11-01T01:00:00Z"),
+    });
+    expect((await next(req("POST", "/api/teams", lolTeam()))).statusCode).toBe(201);
+  });
+});
+
 describe("teams", () => {
   it("saves a valid team against a seed list, snapshots characters, publishes immutable JSON", async () => {
     const r = await call("POST", "/api/teams", lolTeam());
@@ -199,6 +237,32 @@ describe("teams", () => {
 });
 
 describe("lists", () => {
+  it("consumes the verified upload session for one save without a second challenge", async () => {
+    const objects = new MemoryMedia();
+    api = createApi({
+      store,
+      publish,
+      human,
+      seeds: [seed],
+      media: new Media(store, objects),
+      ipSalt: "test-only-salt",
+    });
+    const { body: grant } = await call("POST", "/api/uploads", { contentType: "image/jpeg" });
+    const bytes = Buffer.from([
+      0xff, 0xd8, 0xff, 0xc0, 0, 11, 8, 0, 128, 8, 0, 1, 1, 0x11, 0, 0xff, 0xd9,
+    ]);
+    await objects.put(grant.key, { bytes, contentType: "image/jpeg" });
+    const input = {
+      ...LIST,
+      atlas: { key: grant.key, tile: 128, columns: 16, count: 11 },
+      uploadToken: grant.uploadToken,
+    };
+    expect((await call("POST", "/api/lists", input, { "x-turnstile-token": "" })).status).toBe(201);
+    expect(human).toHaveBeenCalledTimes(1);
+    expect(store.lists.size).toBe(1);
+    expect((await call("POST", "/api/lists", input, { "x-turnstile-token": "" })).status).toBe(422);
+    expect(store.lists.size).toBe(1);
+  });
   it("rejects foreign atlases and stale edits without changing a list", async () => {
     const { body } = await call("POST", "/api/lists", LIST);
     const authorization = `Bearer ${body.editToken}`;

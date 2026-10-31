@@ -6,6 +6,7 @@ import {
   GetCommand,
   PutCommand,
   QueryCommand,
+  UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { mockClient } from "aws-sdk-client-mock";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -31,6 +32,20 @@ const list = {
 
 describe("DynamoStore (single-table keys)", () => {
   const store = new DynamoStore("t", new DynamoDBClient({ region: "us-east-1" }));
+
+  it("atomically increments a TTL'd counter and rejects a full window", async () => {
+    ddb.on(UpdateCommand).resolves({});
+    expect(await store.consumeRate("RATE#hash#1#teams", 200, 10800)).toBe(true);
+    expect(ddb.commandCalls(UpdateCommand)[0]!.args[0].input).toMatchObject({
+      Key: { PK: "RATE#hash#1#teams", SK: "COUNT" },
+      ConditionExpression: "attribute_not_exists(#count) OR #count < :limit",
+      ExpressionAttributeValues: { ":limit": 200, ":one": 1, ":expires": 10800 },
+    });
+    ddb
+      .on(UpdateCommand)
+      .rejects(new ConditionalCheckFailedException({ message: "full", $metadata: {} }));
+    expect(await store.consumeRate("RATE#hash#1#teams", 200, 10800)).toBe(false);
+  });
 
   it("writes lists under LIST#<id>/META, indexes public ones in GSI1, guards versions", async () => {
     ddb.on(PutCommand).resolves({});

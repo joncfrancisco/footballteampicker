@@ -17,7 +17,8 @@ body-size rule counts oversized JSON rather than rejecting legitimate list saves
 scope-down rule can be enabled for a compatible tier with `waf_api_rate_enabled`; it defaults
 off as allowed by #17.
 
-After that WAF configuration is deployed, create a Free subscription with admin credentials:
+The subscription was created and verified ACTIVE on 2026-10-31; its ARN is in INFRA.md.
+For disaster recovery, create a Free subscription with admin credentials:
 
 ```sh
 aws pricing-plan-manager create-subscription --region us-east-1 \
@@ -37,9 +38,33 @@ authority to change other services' pricing plans. Plan changes are an explicit 
 operation. See the [PricingPlanManager API guide](https://docs.aws.amazon.com/PricingPlanManager/latest/UserGuide/getting-started-pricingplanmanager-api.html)
 and [IAM reference](https://docs.aws.amazon.com/service-authorization/latest/reference/list_pricing-plan-manager.html).
 
+## Pause and resume writes
+
+With operator credentials in account `020949219706`, run `bin/killswitch status`,
+`bin/killswitch on` (pause), or `bin/killswitch off` (restore concurrency 25). Browsing,
+published list/team links and image export read S3 and remain available. Clients receiving
+429/503 retain their drafts and show the sharing-paused message. Deploys preserve a pause.
+
+To test the automatic path, set `footballteampicker-write-spike` to ALARM using
+`aws cloudwatch set-alarm-state --alarm-name footballteampicker-write-spike --state-value ALARM --state-reason 'operator smoke test'`.
+Wait for API concurrency zero, verify an existing shared team still loads, restore with
+`bin/killswitch off`, and set the alarm back to OK. Never test this during a planned load
+window. SNS subscription filters can take up to 15 minutes to propagate after creation.
+
+If the budget deny action fired, restoring concurrency alone does not restore writes.
+Inspect the action with `aws budgets describe-budget-actions-for-budget --account-id 020949219706 --budget-name footballteampicker-monthly`.
+After reviewing the cause and costs, use `aws budgets execute-budget-action` with that
+budget, account, action ID and `--execution-type REVERSE_BUDGET_ACTION`, then reset the
+action with `--execution-type RESET`. Verify the deny policy is detached before resuming.
+Do not delete or modify the deny policy: the bootstrap budget role can attach only that policy.
+
+Re-run `bootstrap/bootstrap.sh` with admin credentials when bootstrap policy JSON changes.
+It creates the budget execution role and deny policy and grants CI only PassRole to Budgets.
+Normal Terraform apply cannot change these bootstrap roles or the permissions boundary.
+
 ## Remaining launch runbook
 
-Production Turnstile key configuration, kill-switch and budget-action procedures, load-test
-windows, rollback details, rotations, and seed regeneration are tracked in #15/#17/#18 and
+Production Turnstile public key configuration, load-test windows, rollback details, rotations,
+and seed regeneration are tracked in #15/#17/#18 and
 will be filled in as those mechanisms are deployed. Public writes remain gated until the
 matching public Turnstile site key is configured and launch checks are complete.

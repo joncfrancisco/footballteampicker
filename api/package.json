@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/local.ts",
-    "build": "esbuild src/handler.ts --bundle --platform=node --target=node22 --format=esm --main-fields=module,main --outfile=dist/index.mjs --sourcemap --external:@aws-sdk/client-* --external:@aws-sdk/lib-dynamodb && node bin/check-build.mjs",
+    "build": "node bin/build.mjs && node bin/check-build.mjs",
     "typecheck": "tsc -p ."
   },
   "devDependencies": {
@@ -17,7 +17,9 @@
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.1161.0",
+    "@aws-sdk/client-lambda": "^3.1161.0",
     "@aws-sdk/client-s3": "^3.1161.0",
+    "@aws-sdk/client-secrets-manager": "^3.1161.0",
     "@aws-sdk/client-sns": "^3.1161.0",
     "@aws-sdk/client-ssm": "^3.1161.0",
     "@aws-sdk/lib-dynamodb": "^3.1161.0",
