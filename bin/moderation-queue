@@ -4,7 +4,13 @@ import { fileURLToPath } from "node:url";
 import process from "node:process";
 const result = spawnSync(
   process.execPath,
-  ["--import", "tsx", fileURLToPath(new URL("../api/src/moderation.ts", import.meta.url)), "queue"],
+  [
+    "--import",
+    "tsx",
+    fileURLToPath(new URL("../api/src/moderation.ts", import.meta.url)),
+    "queue",
+    ...process.argv.slice(2),
+  ],
   { stdio: "inherit" },
 );
 process.exitCode = result.status ?? 1;

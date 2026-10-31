@@ -64,6 +64,24 @@ describe("DynamoStore (single-table keys)", () => {
     });
   });
 
+  it("indexes open reports in GSI1 so moderators query instead of scanning (#51)", async () => {
+    ddb.on(PutCommand).resolves({});
+    const report = {
+      targetType: "list" as const,
+      targetId: "abcdefghij",
+      reason: "spam",
+      ipHash: "net",
+      createdAt: "2026-11-01T00:00:00Z",
+    };
+    expect(await store.putReport(report)).toBe(true);
+    expect(ddb.commandCalls(PutCommand)[0]!.args[0].input.Item).toMatchObject({
+      PK: "REPORT#list#abcdefghij",
+      SK: "net",
+      status: "open",
+      GSI1PK: "REPORT#open",
+      GSI1SK: "2026-11-01T00:00:00Z",
+    });
+  });
   it("turns a failed condition into a VersionConflict", async () => {
     ddb
       .on(PutCommand)
