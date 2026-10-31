@@ -50,6 +50,12 @@ resource "aws_cloudfront_distribution" "site" {
   }
 
   origin {
+    origin_id                = "media"
+    domain_name              = aws_s3_bucket.media.bucket_regional_domain_name
+    origin_access_control_id = aws_cloudfront_origin_access_control.media.id
+  }
+
+  origin {
     origin_id                = "api"
     domain_name              = split("/", aws_lambda_function_url.api.function_url)[2]
     origin_access_control_id = aws_cloudfront_origin_access_control.api.id
@@ -86,6 +92,19 @@ resource "aws_cloudfront_distribution" "site" {
     compress                   = true
     cache_policy_id            = data.aws_cloudfront_cache_policy.caching_disabled.id
     origin_request_policy_id   = data.aws_cloudfront_origin_request_policy.all_viewer_except_host.id
+    response_headers_policy_id = data.aws_cloudfront_response_headers_policy.security_headers.id
+  }
+
+  # Published JSON and atlases. TTLs follow each object's Cache-Control (immutable for teams,
+  # 60 s for lists and browse).
+  ordered_cache_behavior {
+    path_pattern               = "/m/*"
+    target_origin_id           = "media"
+    viewer_protocol_policy     = "redirect-to-https"
+    allowed_methods            = ["GET", "HEAD"]
+    cached_methods             = ["GET", "HEAD"]
+    compress                   = true
+    cache_policy_id            = data.aws_cloudfront_cache_policy.caching_optimized.id
     response_headers_policy_id = data.aws_cloudfront_response_headers_policy.security_headers.id
   }
 

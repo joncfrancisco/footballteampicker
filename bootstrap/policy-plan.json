@@ -61,7 +61,7 @@
       ],
       "Resource": [
         "arn:aws:lambda:us-east-1:020949219706:function:footballteampicker-*",
-        "arn:aws:dynamodb:us-east-1:020949219706:table/footballteampicker-*",
+        "arn:aws:dynamodb:us-east-1:020949219706:table/footballteampicker*",
         "arn:aws:logs:us-east-1:020949219706:log-group:/aws/lambda/footballteampicker-*",
         "arn:aws:logs:us-east-1:020949219706:log-group:aws-waf-logs-footballteampicker*",
         "arn:aws:cloudwatch:us-east-1:020949219706:alarm:footballteampicker-*",

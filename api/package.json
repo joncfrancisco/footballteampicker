@@ -4,15 +4,21 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/local.ts",
-    "build": "esbuild src/handler.ts --bundle --platform=node --target=node22 --format=esm --outfile=dist/index.mjs --sourcemap",
+    "build": "esbuild src/handler.ts --bundle --platform=node --target=node22 --format=esm --outfile=dist/index.mjs --sourcemap --external:@aws-sdk/*",
     "typecheck": "tsc -p ."
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.164",
+    "aws-sdk-client-mock": "^4.1.0",
     "esbuild": "^0.25.12",
     "tsx": "^4.23.15"
   },
   "dependencies": {
-    "@ftp/shared": "*"
+    "@aws-sdk/client-dynamodb": "^3.1161.0",
+    "@aws-sdk/client-s3": "^3.1161.0",
+    "@aws-sdk/client-ssm": "^3.1161.0",
+    "@aws-sdk/lib-dynamodb": "^3.1161.0",
+    "@ftp/shared": "*",
+    "zod": "^4.6.7"
   }
 }

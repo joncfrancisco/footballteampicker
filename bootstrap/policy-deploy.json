@@ -30,7 +30,7 @@
       "Sid": "OwnTables",
       "Effect": "Allow",
       "Action": "dynamodb:*",
-      "Resource": "arn:aws:dynamodb:us-east-1:020949219706:table/footballteampicker-*"
+      "Resource": "arn:aws:dynamodb:us-east-1:020949219706:table/footballteampicker*"
     },
     {
       "Sid": "OwnLogGroups",
