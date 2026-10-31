@@ -51,15 +51,24 @@ export const ListInput = z
     description: text(500).default(""),
     tags: z.array(required(40)).max(20).default([]),
     visibility: z.enum(["public", "unlisted"]).default("unlisted"),
+    seedId: id.optional(),
+    uploadToken: z.string().max(100).optional(),
+    baseVersion: z.number().int().positive().optional(),
     atlas: z.object({
-      key: z.string().regex(/^m\/a\/[A-Za-z0-9_-]+\.webp$/),
+      key: z
+        .string()
+        .regex(
+          /^(?:tmp\/[A-Za-z0-9-]+|m\/(?:a\/[A-Za-z0-9_-]+\.webp|img\/[A-Za-z0-9]+\/atlas-[a-f0-9]+\.(?:webp|jpg)|seeds\/[A-Za-z0-9_-]+\/atlas-[a-f0-9]+\.webp))$/,
+        ),
       tile: z.number().int().min(32).max(256),
       columns: z.number().int().min(1).max(32),
-      count: z.number().int().min(1).max(150),
+      count: z.number().int().min(11).max(200),
     }),
-    characters: z.array(ListCharacterInput).min(1).max(150),
+    characters: z.array(ListCharacterInput).min(11).max(200),
   })
   .superRefine((list, ctx) => {
+    if (list.characters.length > 150 && !list.seedId)
+      ctx.addIssue({ code: "custom", path: ["characters"], message: "150 characters maximum" });
     const seen = new Set<string>();
     list.characters.forEach((c, i) => {
       if (seen.has(c.id))
@@ -74,6 +83,8 @@ export const ListInput = z
     });
   });
 export type ListInput = z.infer<typeof ListInput>;
+
+export const UploadInput = z.object({ contentType: z.enum(["image/webp", "image/jpeg"]) });
 
 export const ReportInput = z.object({
   targetId: id,

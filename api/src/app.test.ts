@@ -7,6 +7,7 @@ import type { HumanCheck } from "./human";
 import { MemoryPublisher } from "./publish";
 import { MemoryStore } from "./store";
 import type { Event } from "./types";
+import { Media, MemoryMedia } from "./media";
 
 const seed = CharacterList.parse(lol);
 let store: MemoryStore;
@@ -20,6 +21,7 @@ beforeEach(() => {
   human = vi.fn<HumanCheck>(async (token) => (token === "ok" ? "ok" : "failed"));
   api = createApi({
     store,
+    media: new Media(store, new MemoryMedia()),
     publish,
     human,
     seeds: [seed],
@@ -54,12 +56,9 @@ const LIST = {
   title: "Test Roster",
   ip: "Test Game",
   visibility: "public",
-  atlas: { key: "m/a/abc.webp", tile: 120, columns: 4, count: 3 },
-  characters: [
-    { id: "a", name: "Alpha", atlasIndex: 0 },
-    { id: "b", name: "Bravo", atlasIndex: 1, twoWay: true },
-    { id: "c", name: "Charlie", atlasIndex: 2 },
-  ],
+  seedId: seed.id,
+  atlas: { ...seed.atlas, key: `m/seeds/${seed.id}/${seed.atlas.src}` },
+  characters: seed.characters.slice(0, 11).map((c, i) => ({ ...c, twoWay: i === 1 })),
 };
 
 function lolTeam(): Team {
@@ -167,11 +166,54 @@ describe("teams", () => {
     });
     const ok = await call("POST", "/api/teams", { ...t, listVersion: 2 });
     expect(ok.status).toBe(201);
-    expect((publish.json(`m/t/${ok.body.id}.json`) as any).atlas.src).toBe("/m/a/abc.webp");
+    expect((publish.json(`m/t/${ok.body.id}.json`) as any).atlas.src).toBe(`/${LIST.atlas.key}`);
   });
 });
 
 describe("lists", () => {
+  it("rejects foreign atlases and stale edits without changing a list", async () => {
+    const { body } = await call("POST", "/api/lists", LIST);
+    const authorization = `Bearer ${body.editToken}`;
+    const foreign = {
+      ...LIST,
+      atlas: { ...LIST.atlas, key: `m/img/abcdefghij/atlas-${"a".repeat(64)}.webp` },
+    };
+    expect((await call("POST", "/api/lists", foreign)).status).toBe(422);
+    expect((await call("PUT", `/api/lists/${body.id}`, foreign, { authorization })).status).toBe(
+      422,
+    );
+    expect(
+      (await call("PUT", `/api/lists/${body.id}`, { ...LIST, baseVersion: 9 }, { authorization }))
+        .status,
+    ).toBe(409);
+    expect(store.lists.get(body.id)?.version).toBe(1);
+  });
+
+  it("issues an upload session only after verification and rejects forged seed exemptions", async () => {
+    expect(
+      (
+        await call(
+          "POST",
+          "/api/uploads",
+          { contentType: "image/webp" },
+          { "x-turnstile-token": "bad" },
+        )
+      ).status,
+    ).toBe(403);
+    expect(store.uploads.size).toBe(0);
+    const { status, body } = await call("POST", "/api/uploads", { contentType: "image/webp" });
+    expect(status).toBe(201);
+    expect(store.uploads.get(body.key)?.tokenHash).not.toBe(body.uploadToken);
+    expect((await call("POST", "/api/lists", { ...LIST, seedId: "unknown-seed" })).status).toBe(
+      400,
+    );
+    const characters = Array.from({ length: 151 }, (_, i) => ({
+      id: `new${i}`,
+      name: `New ${i}`,
+      atlasIndex: 0,
+    }));
+    expect((await call("POST", "/api/lists", { ...LIST, characters })).status).toBe(400);
+  });
   it("creates a list, returns the edit token once, stores only its hash, publishes JSON and browse", async () => {
     const r = await call("POST", "/api/lists", LIST);
     expect(r.status).toBe(201);
@@ -180,13 +222,13 @@ describe("lists", () => {
     const stored = store.lists.get(id)!;
     expect(stored.editTokenHash).not.toContain(editToken);
     expect(publish.json(`m/l/${id}.json`)).not.toHaveProperty("editTokenHash");
-    expect(publish.json(`m/l/${id}.json`)).toMatchObject({ atlas: { src: "/m/a/abc.webp" } });
+    expect(publish.json(`m/l/${id}.json`)).toMatchObject({ atlas: { src: `/${LIST.atlas.key}` } });
     expect((publish.json("m/browse/index.json") as any).lists[0]).toMatchObject({
-      count: 3,
+      count: 11,
       twoWayCount: 1,
-      cover: [0, 1, 2],
+      cover: [0, 1, 2, 3],
       createdAt: "2026-11-01T00:00:00.000Z",
-      atlas: { src: "/m/a/abc.webp" },
+      atlas: { src: `/${LIST.atlas.key}` },
     });
     expect((publish.json("m/browse/index.json") as any).lists.map((l: any) => l.id)).toEqual([id]);
   });
@@ -207,7 +249,10 @@ describe("lists", () => {
       { ...LIST, title: "Renamed" },
       { authorization: `Bearer ${body.editToken}` },
     );
-    expect(r).toEqual({ status: 200, body: { id: body.id, version: 2 } });
+    expect(r).toMatchObject({
+      status: 200,
+      body: { id: body.id, version: 2, atlas: { key: LIST.atlas.key } },
+    });
     expect((publish.json(`m/l/${body.id}.json`) as any).title).toBe("Renamed");
   });
 

@@ -66,7 +66,7 @@ it exists, writes answer 503 `writes_unavailable` (fail closed).
 - S3 `footballteampicker-media-020949219706` behind CloudFront `/m/*` (OAC, `CachingOptimized`):
   every read is one of these objects, published by the API after each write:
   `m/t/<id>.json` (immutable), `m/l/<id>.json` and `m/browse/index.json` (`max-age=60`),
-  and from #10 list atlases under `m/a/`. The API never invalidates: lists and browse catch up
+  list atlases under `m/img/<listId>/atlas-<hash>.webp` (or `.jpg`). The API never invalidates: lists and browse catch up
   within a minute and teams never change. Takedowns invalidate from the admin script (#13).
 - Saved seed teams use `m/seeds/<seedId>/atlas-<hash>.webp`. Deploy uploads new seed atlases
   without deleting old ones, so a saved team keeps its original portraits across seed updates.
@@ -86,6 +86,25 @@ tokens are never replayed. An unchanged team reuses the last saved ID in this br
 Shared teams read `/m/t/<id>.json` and render their saved character snapshot, including names,
 two-way flags and atlas tiles. Formation/view changes stay local. Remix separately loads the
 current list, clears removed characters, and keeps offense when a two-way flag was disabled.
+
+## Character-list uploads
+
+The editor builds a 128 px, 16-column atlas in WebP, falling back to JPEG at quality 0.85.
+`POST /api/uploads` checks Turnstile, records `UPLOAD#tmp/<uuid>` / `META` with a hashed
+upload token and ten-minute expiry, and returns a presigned S3 POST. Its policy fixes the
+temporary key and MIME type and caps the object at 1,500,000 bytes. The bucket permits direct
+POSTs only from the production origin and expires `tmp/` after one day.
+
+List saves require a fresh Turnstile token. The API atomically consumes the upload session,
+checks MIME/magic bytes, file size, and header dimensions against the tile grid, and publishes
+the validated bytes under the list's immutable content hash. It never copies a mutable object
+after validation. Saved lists contain neither upload tokens nor raw edit tokens. Failed saves
+keep the editor open; retrying builds a new upload session.
+
+Existing owned atlases and verified seed atlases can be reused without uploading. Edits use
+the current version as an optimistic concurrency check. Custom lists require 11–150 characters;
+a verified seed remix may retain the seed's larger roster and its required disclaimer. Old
+atlases remain after edits and list deletion because saved teams still reference them.
 
 ## Deploys (`.github/workflows/deploy.yml`)
 

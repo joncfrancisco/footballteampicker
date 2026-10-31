@@ -1,5 +1,12 @@
 /** Shared with the list editor: tokens stay local and never appear in public links. */
 const PREFIX = "ftp:edit:";
+export function editToken(id: string): string | undefined {
+  try {
+    return localStorage.getItem(`${PREFIX}${id}`) ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
 export function ownedListIds(): string[] {
   try {
     return Object.keys(localStorage)

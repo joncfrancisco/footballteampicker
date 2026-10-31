@@ -46,7 +46,7 @@ data "aws_iam_policy_document" "api" {
   statement {
     sid       = "PublishMedia"
     actions   = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"]
-    resources = ["${aws_s3_bucket.media.arn}/m/*"]
+    resources = ["${aws_s3_bucket.media.arn}/m/*", "${aws_s3_bucket.media.arn}/tmp/*"]
   }
 
   # Turnstile secret and IP salt are SecureStrings set out of band, never in Terraform state.

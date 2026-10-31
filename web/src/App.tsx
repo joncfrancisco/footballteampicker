@@ -8,6 +8,7 @@ import type { LoadedList } from "./lists";
 import { Catalog, ListPage, NotFound } from "./Catalog";
 import { TeamPage, RemixBuilder } from "./TeamPage";
 import { ShareMenu } from "./ShareMenu";
+import { EditorPage } from "./editor/Editor";
 
 // ?fill=demo (&sections=1) is for screenshots and checks; it never touches the saved draft.
 const params = () => new URLSearchParams(window.location.search);
@@ -19,6 +20,7 @@ export function App() {
   const demo = path === "/" && isDemo();
   const seedBuilder = match?.[1] === "build" && SEED_LISTS.find((l) => l.id === match[2]);
   const shared = path.match(/^\/t\/([A-Za-z0-9]{10})\/?$/);
+  const editing = path.match(/^\/l\/([A-Za-z0-9_-]{1,64})\/edit\/?$/);
   const remix = match?.[1] === "build" && params().get("remix");
   return (
     <>
@@ -31,7 +33,11 @@ export function App() {
         </nav>
       </header>
       <main>
-        {shared ? (
+        {path === "/new" ? (
+          <EditorPage remix={params().get("remix") ?? undefined} />
+        ) : editing ? (
+          <EditorPage id={editing[1]!} />
+        ) : shared ? (
           <TeamPage id={shared[1]!} />
         ) : remix && /^[A-Za-z0-9]{10}$/.test(remix) ? (
           <RemixBuilder

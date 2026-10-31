@@ -13,11 +13,15 @@ import { TEST_SECRET, turnstile } from "./human";
 import { MemoryPublisher } from "./publish";
 import { MemoryStore } from "./store";
 import type { Event } from "./types";
+import { Media, MemoryMedia, MAX_ATLAS } from "./media";
 
 const PORT = Number(process.env.API_PORT ?? 8787);
 const publish = new MemoryPublisher();
+const store = new MemoryStore();
+const media = new MemoryMedia();
 const api = createApi({
-  store: new MemoryStore(),
+  store,
+  media: new Media(store, media),
   publish,
   human: turnstile({ secret: async () => TEST_SECRET, hostname: "localhost" }),
   seeds: [CharacterList.parse(lol)],
@@ -37,6 +41,14 @@ createServer(async (req, res) => {
   }
 
   if (req.method === "GET" && url.pathname.startsWith("/m/")) {
+    const image = media.objects.get(url.pathname.slice(1));
+    if (image) {
+      res.writeHead(200, {
+        "content-type": image.contentType,
+        "cache-control": "public,max-age=31536000,immutable",
+      });
+      return res.end(image.bytes);
+    }
     const o = publish.objects.get(url.pathname.slice(1));
     res.writeHead(o ? 200 : 404, {
       "content-type": "application/json",
@@ -46,7 +58,41 @@ createServer(async (req, res) => {
   }
 
   const chunks: Buffer[] = [];
-  for await (const chunk of req) chunks.push(chunk as Buffer);
+  let length = 0;
+  for await (const chunk of req) {
+    length += (chunk as Buffer).length;
+    if (length > MAX_ATLAS + 64 * 1024) {
+      res.writeHead(413);
+      return res.end();
+    }
+    chunks.push(chunk as Buffer);
+  }
+  if (req.method === "POST" && url.pathname.startsWith("/api/local-upload/")) {
+    const key = `tmp/${url.pathname.split("/").pop()}`;
+    const mime = media.pending.get(key);
+    if (!mime) {
+      res.writeHead(403);
+      return res.end();
+    }
+    try {
+      const form = await new Request(url, {
+        method: "POST",
+        headers: { "content-type": req.headers["content-type"] ?? "" },
+        body: Buffer.concat(chunks),
+      }).formData();
+      const file = form.get("file");
+      if (!(file instanceof Blob) || file.size < 1 || file.size > MAX_ATLAS || file.type !== mime) {
+        res.writeHead(400);
+        return res.end();
+      }
+      await media.put(key, { bytes: new Uint8Array(await file.arrayBuffer()), contentType: mime });
+      res.writeHead(204);
+      return res.end();
+    } catch {
+      res.writeHead(400);
+      return res.end();
+    }
+  }
   const body = Buffer.concat(chunks).toString("utf8");
   const event = {
     version: "2.0",

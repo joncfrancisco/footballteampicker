@@ -1,6 +1,7 @@
 import { ConditionalCheckFailedException, DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
   DynamoDBDocumentClient,
+  DeleteCommand,
   GetCommand,
   PutCommand,
   QueryCommand,
@@ -51,6 +52,20 @@ describe("DynamoStore (single-table keys)", () => {
       .on(PutCommand)
       .rejects(new ConditionalCheckFailedException({ message: "x", $metadata: {} }));
     await expect(store.putList(list)).rejects.toBeInstanceOf(VersionConflict);
+  });
+
+  it("atomically consumes an unexpired upload token and treats a failed condition as rejection", async () => {
+    ddb.on(DeleteCommand).resolves({});
+    expect(await store.claimUpload("tmp/key", "hashed-token", 100)).toBe(true);
+    expect(ddb.commandCalls(DeleteCommand)[0]!.args[0].input).toMatchObject({
+      Key: { PK: "UPLOAD#tmp/key", SK: "META" },
+      ConditionExpression: "tokenHash = :hash AND expiresAt > :now",
+      ExpressionAttributeValues: { ":hash": "hashed-token", ":now": 100 },
+    });
+    ddb
+      .on(DeleteCommand)
+      .rejects(new ConditionalCheckFailedException({ message: "expired", $metadata: {} }));
+    expect(await store.claimUpload("tmp/key", "wrong", 100)).toBe(false);
   });
 
   it("strips keys on read and pages the public index newest first", async () => {
