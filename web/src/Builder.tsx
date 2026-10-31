@@ -1,13 +1,16 @@
 import {
   FRONTS,
+  at,
   autoFill,
   clearSide,
   defenseFormations,
+  filledCount,
   formationById,
   formationLabel,
   movedNotice,
   offenseFormations,
   randomize,
+  setSection,
   slotsFor,
   switchFront,
   type Formation,
@@ -22,6 +25,7 @@ import { Field } from "./field/Field";
 import { VIEW } from "./field/views";
 import type { LoadedList } from "./lists";
 import { Pool } from "./pool/Pool";
+import { SpecialTeamsPanel, StaffStrip } from "./sections/Sections";
 import { useMedia } from "./useSize";
 
 const PACKAGES = { base: "Base", nickel: "Nickel", dime: "Dime" } as const;
@@ -63,6 +67,21 @@ function BuilderBody(props: Props & { notice: string; setNotice: (s: string) => 
   const offenseSlots = slotsFor(offense, team.offense.qb);
   const qb = team.offense.qb ?? offense.qb;
 
+  const toggleSection = (section: "specialTeams" | "staff") => {
+    const on = team[section] !== undefined;
+    const filled = filledCount(team, section);
+    const name = section === "staff" ? "staff" : "special teams";
+    if (
+      on &&
+      filled > 0 &&
+      !window.confirm(
+        `Remove ${name}? ${filled} filled ${filled === 1 ? "spot" : "spots"} will be cleared.`,
+      )
+    )
+      return;
+    onChange(setSection(team, section, !on));
+  };
+
   const setFront = (front: Front) => {
     const { team: next, moved } = switchFront(team, front);
     onChange(next);
@@ -84,6 +103,19 @@ function BuilderBody(props: Props & { notice: string; setNotice: (s: string) => 
           {(["field", "depth"] as const).map((v) => (
             <button key={v} type="button" aria-pressed={view === v} onClick={() => setView(v)}>
               {v === "field" ? "Field" : "Depth chart"}
+            </button>
+          ))}
+        </div>
+        <div className="section-toggles" role="group" aria-label="Optional sections">
+          {(["specialTeams", "staff"] as const).map((section) => (
+            <button
+              key={section}
+              type="button"
+              aria-pressed={team[section] !== undefined}
+              onClick={() => toggleSection(section)}
+            >
+              {team[section] !== undefined ? "✓ " : "+ "}
+              {section === "staff" ? "Staff" : "Special teams"}
             </button>
           ))}
         </div>
@@ -156,6 +188,8 @@ function BuilderBody(props: Props & { notice: string; setNotice: (s: string) => 
 
           <StatusBar notice={notice} />
 
+          {view === "field" && team.staff && <StaffStrip />}
+
           {view === "depth" ? (
             <DepthChart list={list} team={team} offense={offense} defense={defense} />
           ) : facing ? (
@@ -184,6 +218,8 @@ function BuilderBody(props: Props & { notice: string; setNotice: (s: string) => 
               )}
             </>
           )}
+
+          {view === "field" && team.specialTeams && <SpecialTeamsPanel />}
         </div>
         <Pool />
       </div>
@@ -196,10 +232,7 @@ function StatusBar({ notice }: { notice: string }) {
   const { list, team, selected, removeSelected, clearSelection } = useLineup();
   let prompt: React.ReactNode = null;
   if (selected) {
-    const id =
-      selected.kind === "pool"
-        ? selected.id
-        : team[selected.spot.side].depth[selected.spot.pos]?.[selected.spot.index];
+    const id = selected.kind === "pool" ? selected.id : at(team, selected.spot);
     const name = (id && list.byId.get(id)?.name) ?? "";
     prompt = (
       <>

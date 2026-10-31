@@ -1,6 +1,6 @@
 import { useDraggable, useDroppable } from "@dnd-kit/core";
-import type { Spot } from "@ftp/shared";
-import { spotId, spotLabel } from "./ids";
+import { at, type Spot } from "@ftp/shared";
+import { sideName, spotId, spotLabel } from "./ids";
 import { sameSpot, useLineup } from "./Lineup";
 
 /**
@@ -11,7 +11,7 @@ import { sameSpot, useLineup } from "./Lineup";
 export function useSpot(spot: Spot) {
   const { list, team, selected, activateSpot } = useLineup();
   const id = spotId(spot);
-  const charId = team[spot.side].depth[spot.pos]?.[spot.index] ?? null;
+  const charId = at(team, spot);
   const character = charId ? list.byId.get(charId) : undefined;
   const drop = useDroppable({ id });
   const drag = useDraggable({ id, disabled: !character });
@@ -36,8 +36,8 @@ export function useSpot(spot: Spot) {
       // mustn't pick up dnd-kit's aria-disabled / "draggable" description.
       ...(character ? { ...drag.attributes, ...drag.listeners } : {}),
       "aria-label": character
-        ? `${character.name}, ${spot.side} ${label}`
-        : `Empty ${spot.side} ${label}`,
+        ? `${character.name}, ${sideName(spot.side)} ${label}`
+        : `Empty ${sideName(spot.side)} ${label}`,
       "aria-pressed": isSelected,
       onClick: () => activateSpot(spot),
     },

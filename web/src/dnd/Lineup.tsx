@@ -14,6 +14,7 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import {
+  at,
   move,
   place,
   remove,
@@ -26,7 +27,7 @@ import {
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
 import type { LoadedList } from "../lists";
 import { Sprite } from "../Sprite";
-import { POOL_DROP, parsePoolId, parseSpotId, spotLabel } from "./ids";
+import { POOL_DROP, parsePoolId, parseSpotId, sideName, spotLabel } from "./ids";
 import { jumpToNearestSpot } from "./keyboard";
 
 export type Selection = { kind: "pool"; id: CharId } | { kind: "spot"; spot: Spot } | null;
@@ -88,13 +89,14 @@ export function Lineup({ list, team, onChange, onNotice, children }: Props) {
     }),
   );
 
-  const charAt = (spot: Spot) => team[spot.side].depth[spot.pos]?.[spot.index] ?? null;
+  const charAt = (spot: Spot) => at(team, spot);
   const name = (id: CharId | null) => (id && list.byId.get(id)?.name) || "nobody";
 
   const apply = (result: Result) => {
     if (result.ok) {
       onChange(result.team);
       setSelected(null);
+      if (result.notice) onNotice(result.notice);
     } else onNotice(result.reason);
   };
 
@@ -131,7 +133,7 @@ export function Lineup({ list, team, onChange, onNotice, children }: Props) {
     if (id === undefined) return "nowhere";
     if (id === POOL_DROP) return "the pool";
     const spot = parseSpotId(id);
-    return spot ? `${spot.side} ${spotLabel(spot)}` : "the pool";
+    return spot ? `${sideName(spot.side)} ${spotLabel(spot)}` : "the pool";
   };
   const activeName = (id: string | number) => {
     const spot = parseSpotId(id);
