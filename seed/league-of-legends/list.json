@@ -1,0 +1,1887 @@
+{
+  "id": "demo-lol",
+  "title": "League of Legends Champions",
+  "ip": "League of Legends",
+  "description": "Every champion in League of Legends as of patch 16.21.1.",
+  "tags": [
+    "Assassin",
+    "Fighter",
+    "Mage",
+    "Marksman",
+    "Support",
+    "Tank"
+  ],
+  "source": {
+    "provider": "Riot Games Data Dragon",
+    "version": "16.21.1"
+  },
+  "disclaimer": "Depth Chart was created under Riot Games' \"Legal Jibber Jabber\" policy using assets owned by Riot Games. Riot Games does not endorse or sponsor this project.",
+  "atlas": {
+    "src": "atlas-5f082d1080.webp",
+    "tile": 120,
+    "columns": 16,
+    "count": 173
+  },
+  "characters": [
+    {
+      "id": "Aatrox",
+      "name": "Aatrox",
+      "subtitle": "the Darkin Blade",
+      "tags": [
+        "Fighter"
+      ],
+      "twoWay": false,
+      "atlasIndex": 0
+    },
+    {
+      "id": "Ahri",
+      "name": "Ahri",
+      "subtitle": "the Nine-Tailed Fox",
+      "tags": [
+        "Mage",
+        "Assassin"
+      ],
+      "twoWay": false,
+      "atlasIndex": 1
+    },
+    {
+      "id": "Akali",
+      "name": "Akali",
+      "subtitle": "the Rogue Assassin",
+      "tags": [
+        "Assassin"
+      ],
+      "twoWay": false,
+      "atlasIndex": 2
+    },
+    {
+      "id": "Akshan",
+      "name": "Akshan",
+      "subtitle": "the Rogue Sentinel",
+      "tags": [
+        "Marksman",
+        "Assassin"
+      ],
+      "twoWay": false,
+      "atlasIndex": 3
+    },
+    {
+      "id": "Alistar",
+      "name": "Alistar",
+      "subtitle": "the Minotaur",
+      "tags": [
+        "Tank",
+        "Support"
+      ],
+      "twoWay": false,
+      "atlasIndex": 4
+    },
+    {
+      "id": "Ambessa",
+      "name": "Ambessa",
+      "subtitle": "Matriarch of War",
+      "tags": [
+        "Fighter",
+        "Assassin"
+      ],
+      "twoWay": false,
+      "atlasIndex": 5
+    },
+    {
+      "id": "Amumu",
+      "name": "Amumu",
+      "subtitle": "the Sad Mummy",
+      "tags": [
+        "Tank",
+        "Support"
+      ],
+      "twoWay": false,
+      "atlasIndex": 6
+    },
+    {
+      "id": "Anivia",
+      "name": "Anivia",
+      "subtitle": "the Cryophoenix",
+      "tags": [
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 7
+    },
+    {
+      "id": "Annie",
+      "name": "Annie",
+      "subtitle": "the Dark Child",
+      "tags": [
+        "Mage",
+        "Support"
+      ],
+      "twoWay": false,
+      "atlasIndex": 8
+    },
+    {
+      "id": "Aphelios",
+      "name": "Aphelios",
+      "subtitle": "the Weapon of the Faithful",
+      "tags": [
+        "Marksman"
+      ],
+      "twoWay": false,
+      "atlasIndex": 9
+    },
+    {
+      "id": "Ashe",
+      "name": "Ashe",
+      "subtitle": "the Frost Archer",
+      "tags": [
+        "Marksman",
+        "Support"
+      ],
+      "twoWay": false,
+      "atlasIndex": 10
+    },
+    {
+      "id": "AurelionSol",
+      "name": "Aurelion Sol",
+      "subtitle": "The Star Forger",
+      "tags": [
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 11
+    },
+    {
+      "id": "Aurora",
+      "name": "Aurora",
+      "subtitle": "the Witch Between Worlds",
+      "tags": [
+        "Mage",
+        "Assassin"
+      ],
+      "twoWay": false,
+      "atlasIndex": 12
+    },
+    {
+      "id": "Azir",
+      "name": "Azir",
+      "subtitle": "the Emperor of the Sands",
+      "tags": [
+        "Mage",
+        "Marksman"
+      ],
+      "twoWay": false,
+      "atlasIndex": 13
+    },
+    {
+      "id": "Bard",
+      "name": "Bard",
+      "subtitle": "the Wandering Caretaker",
+      "tags": [
+        "Support",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 14
+    },
+    {
+      "id": "Belveth",
+      "name": "Bel'Veth",
+      "subtitle": "the Empress of the Void",
+      "tags": [
+        "Fighter"
+      ],
+      "twoWay": false,
+      "atlasIndex": 15
+    },
+    {
+      "id": "Blitzcrank",
+      "name": "Blitzcrank",
+      "subtitle": "the Great Steam Golem",
+      "tags": [
+        "Tank",
+        "Support"
+      ],
+      "twoWay": false,
+      "atlasIndex": 16
+    },
+    {
+      "id": "Brand",
+      "name": "Brand",
+      "subtitle": "the Burning Vengeance",
+      "tags": [
+        "Mage",
+        "Support"
+      ],
+      "twoWay": false,
+      "atlasIndex": 17
+    },
+    {
+      "id": "Braum",
+      "name": "Braum",
+      "subtitle": "the Heart of the Freljord",
+      "tags": [
+        "Tank",
+        "Support"
+      ],
+      "twoWay": false,
+      "atlasIndex": 18
+    },
+    {
+      "id": "Briar",
+      "name": "Briar",
+      "subtitle": "the Restrained Hunger",
+      "tags": [
+        "Fighter",
+        "Assassin"
+      ],
+      "twoWay": false,
+      "atlasIndex": 19
+    },
+    {
+      "id": "Caitlyn",
+      "name": "Caitlyn",
+      "subtitle": "the Sheriff of Piltover",
+      "tags": [
+        "Marksman"
+      ],
+      "twoWay": false,
+      "atlasIndex": 20
+    },
+    {
+      "id": "Camille",
+      "name": "Camille",
+      "subtitle": "the Steel Shadow",
+      "tags": [
+        "Fighter",
+        "Assassin"
+      ],
+      "twoWay": false,
+      "atlasIndex": 21
+    },
+    {
+      "id": "Cassiopeia",
+      "name": "Cassiopeia",
+      "subtitle": "the Serpent's Embrace",
+      "tags": [
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 22
+    },
+    {
+      "id": "Chogath",
+      "name": "Cho'Gath",
+      "subtitle": "the Terror of the Void",
+      "tags": [
+        "Tank",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 23
+    },
+    {
+      "id": "Corki",
+      "name": "Corki",
+      "subtitle": "the Daring Bombardier",
+      "tags": [
+        "Marksman",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 24
+    },
+    {
+      "id": "Darius",
+      "name": "Darius",
+      "subtitle": "the Hand of Noxus",
+      "tags": [
+        "Fighter",
+        "Tank"
+      ],
+      "twoWay": false,
+      "atlasIndex": 25
+    },
+    {
+      "id": "Diana",
+      "name": "Diana",
+      "subtitle": "Scorn of the Moon",
+      "tags": [
+        "Fighter",
+        "Assassin"
+      ],
+      "twoWay": false,
+      "atlasIndex": 26
+    },
+    {
+      "id": "DrMundo",
+      "name": "Dr. Mundo",
+      "subtitle": "the Madman of Zaun",
+      "tags": [
+        "Tank",
+        "Fighter"
+      ],
+      "twoWay": false,
+      "atlasIndex": 27
+    },
+    {
+      "id": "Draven",
+      "name": "Draven",
+      "subtitle": "the Glorious Executioner",
+      "tags": [
+        "Marksman"
+      ],
+      "twoWay": false,
+      "atlasIndex": 28
+    },
+    {
+      "id": "Ekko",
+      "name": "Ekko",
+      "subtitle": "the Boy Who Shattered Time",
+      "tags": [
+        "Assassin",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 29
+    },
+    {
+      "id": "Elise",
+      "name": "Elise",
+      "subtitle": "the Spider Queen",
+      "tags": [
+        "Assassin",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 30
+    },
+    {
+      "id": "Evelynn",
+      "name": "Evelynn",
+      "subtitle": "Agony's Embrace",
+      "tags": [
+        "Assassin",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 31
+    },
+    {
+      "id": "Ezreal",
+      "name": "Ezreal",
+      "subtitle": "the Prodigal Explorer",
+      "tags": [
+        "Marksman",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 32
+    },
+    {
+      "id": "Fiddlesticks",
+      "name": "Fiddlesticks",
+      "subtitle": "the Ancient Fear",
+      "tags": [
+        "Mage",
+        "Support"
+      ],
+      "twoWay": false,
+      "atlasIndex": 33
+    },
+    {
+      "id": "Fiora",
+      "name": "Fiora",
+      "subtitle": "the Grand Duelist",
+      "tags": [
+        "Fighter",
+        "Assassin"
+      ],
+      "twoWay": false,
+      "atlasIndex": 34
+    },
+    {
+      "id": "Fizz",
+      "name": "Fizz",
+      "subtitle": "the Tidal Trickster",
+      "tags": [
+        "Assassin",
+        "Fighter"
+      ],
+      "twoWay": false,
+      "atlasIndex": 35
+    },
+    {
+      "id": "Galio",
+      "name": "Galio",
+      "subtitle": "the Colossus",
+      "tags": [
+        "Tank",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 36
+    },
+    {
+      "id": "Gangplank",
+      "name": "Gangplank",
+      "subtitle": "the Saltwater Scourge",
+      "tags": [
+        "Fighter"
+      ],
+      "twoWay": false,
+      "atlasIndex": 37
+    },
+    {
+      "id": "Garen",
+      "name": "Garen",
+      "subtitle": "The Might of Demacia",
+      "tags": [
+        "Fighter",
+        "Tank"
+      ],
+      "twoWay": false,
+      "atlasIndex": 38
+    },
+    {
+      "id": "Gnar",
+      "name": "Gnar",
+      "subtitle": "the Missing Link",
+      "tags": [
+        "Fighter",
+        "Tank"
+      ],
+      "twoWay": false,
+      "atlasIndex": 39
+    },
+    {
+      "id": "Gragas",
+      "name": "Gragas",
+      "subtitle": "the Rabble Rouser",
+      "tags": [
+        "Fighter",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 40
+    },
+    {
+      "id": "Graves",
+      "name": "Graves",
+      "subtitle": "the Outlaw",
+      "tags": [
+        "Marksman"
+      ],
+      "twoWay": false,
+      "atlasIndex": 41
+    },
+    {
+      "id": "Gwen",
+      "name": "Gwen",
+      "subtitle": "The Hallowed Seamstress",
+      "tags": [
+        "Fighter"
+      ],
+      "twoWay": false,
+      "atlasIndex": 42
+    },
+    {
+      "id": "Hecarim",
+      "name": "Hecarim",
+      "subtitle": "the Shadow of War",
+      "tags": [
+        "Fighter",
+        "Tank"
+      ],
+      "twoWay": false,
+      "atlasIndex": 43
+    },
+    {
+      "id": "Heimerdinger",
+      "name": "Heimerdinger",
+      "subtitle": "the Revered Inventor",
+      "tags": [
+        "Mage",
+        "Support"
+      ],
+      "twoWay": false,
+      "atlasIndex": 44
+    },
+    {
+      "id": "Hwei",
+      "name": "Hwei",
+      "subtitle": "the Visionary",
+      "tags": [
+        "Mage",
+        "Support"
+      ],
+      "twoWay": false,
+      "atlasIndex": 45
+    },
+    {
+      "id": "Illaoi",
+      "name": "Illaoi",
+      "subtitle": "the Kraken Priestess",
+      "tags": [
+        "Fighter",
+        "Tank"
+      ],
+      "twoWay": false,
+      "atlasIndex": 46
+    },
+    {
+      "id": "Irelia",
+      "name": "Irelia",
+      "subtitle": "the Blade Dancer",
+      "tags": [
+        "Fighter",
+        "Assassin"
+      ],
+      "twoWay": false,
+      "atlasIndex": 47
+    },
+    {
+      "id": "Ivern",
+      "name": "Ivern",
+      "subtitle": "the Green Father",
+      "tags": [
+        "Support",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 48
+    },
+    {
+      "id": "Janna",
+      "name": "Janna",
+      "subtitle": "the Storm's Fury",
+      "tags": [
+        "Support",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 49
+    },
+    {
+      "id": "JarvanIV",
+      "name": "Jarvan IV",
+      "subtitle": "the Exemplar of Demacia",
+      "tags": [
+        "Fighter",
+        "Tank"
+      ],
+      "twoWay": false,
+      "atlasIndex": 50
+    },
+    {
+      "id": "Jax",
+      "name": "Jax",
+      "subtitle": "Grandmaster at Arms",
+      "tags": [
+        "Fighter"
+      ],
+      "twoWay": false,
+      "atlasIndex": 51
+    },
+    {
+      "id": "Jayce",
+      "name": "Jayce",
+      "subtitle": "the Defender of Tomorrow",
+      "tags": [
+        "Fighter",
+        "Marksman"
+      ],
+      "twoWay": false,
+      "atlasIndex": 52
+    },
+    {
+      "id": "Jhin",
+      "name": "Jhin",
+      "subtitle": "the Virtuoso",
+      "tags": [
+        "Marksman",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 53
+    },
+    {
+      "id": "Jinx",
+      "name": "Jinx",
+      "subtitle": "the Loose Cannon",
+      "tags": [
+        "Marksman"
+      ],
+      "twoWay": false,
+      "atlasIndex": 54
+    },
+    {
+      "id": "KSante",
+      "name": "K'Sante",
+      "subtitle": "the Pride of Nazumah",
+      "tags": [
+        "Tank",
+        "Fighter"
+      ],
+      "twoWay": false,
+      "atlasIndex": 55
+    },
+    {
+      "id": "Kaisa",
+      "name": "Kai'Sa",
+      "subtitle": "Daughter of the Void",
+      "tags": [
+        "Marksman",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 56
+    },
+    {
+      "id": "Kalista",
+      "name": "Kalista",
+      "subtitle": "the Spear of Vengeance",
+      "tags": [
+        "Marksman"
+      ],
+      "twoWay": false,
+      "atlasIndex": 57
+    },
+    {
+      "id": "Karma",
+      "name": "Karma",
+      "subtitle": "the Enlightened One",
+      "tags": [
+        "Mage",
+        "Support"
+      ],
+      "twoWay": false,
+      "atlasIndex": 58
+    },
+    {
+      "id": "Karthus",
+      "name": "Karthus",
+      "subtitle": "the Deathsinger",
+      "tags": [
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 59
+    },
+    {
+      "id": "Kassadin",
+      "name": "Kassadin",
+      "subtitle": "the Void Walker",
+      "tags": [
+        "Assassin",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 60
+    },
+    {
+      "id": "Katarina",
+      "name": "Katarina",
+      "subtitle": "the Sinister Blade",
+      "tags": [
+        "Assassin",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 61
+    },
+    {
+      "id": "Kayle",
+      "name": "Kayle",
+      "subtitle": "the Righteous",
+      "tags": [
+        "Marksman",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 62
+    },
+    {
+      "id": "Kayn",
+      "name": "Kayn",
+      "subtitle": "the Shadow Reaper",
+      "tags": [
+        "Fighter",
+        "Assassin"
+      ],
+      "twoWay": false,
+      "atlasIndex": 63
+    },
+    {
+      "id": "Kennen",
+      "name": "Kennen",
+      "subtitle": "the Heart of the Tempest",
+      "tags": [
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 64
+    },
+    {
+      "id": "Khazix",
+      "name": "Kha'Zix",
+      "subtitle": "the Voidreaver",
+      "tags": [
+        "Assassin"
+      ],
+      "twoWay": false,
+      "atlasIndex": 65
+    },
+    {
+      "id": "Kindred",
+      "name": "Kindred",
+      "subtitle": "The Eternal Hunters",
+      "tags": [
+        "Marksman"
+      ],
+      "twoWay": false,
+      "atlasIndex": 66
+    },
+    {
+      "id": "Kled",
+      "name": "Kled",
+      "subtitle": "the Cantankerous Cavalier",
+      "tags": [
+        "Fighter"
+      ],
+      "twoWay": false,
+      "atlasIndex": 67
+    },
+    {
+      "id": "KogMaw",
+      "name": "Kog'Maw",
+      "subtitle": "the Mouth of the Abyss",
+      "tags": [
+        "Marksman",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 68
+    },
+    {
+      "id": "Leblanc",
+      "name": "LeBlanc",
+      "subtitle": "the Deceiver",
+      "tags": [
+        "Assassin",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 69
+    },
+    {
+      "id": "LeeSin",
+      "name": "Lee Sin",
+      "subtitle": "the Blind Monk",
+      "tags": [
+        "Fighter",
+        "Assassin"
+      ],
+      "twoWay": false,
+      "atlasIndex": 70
+    },
+    {
+      "id": "Leona",
+      "name": "Leona",
+      "subtitle": "the Radiant Dawn",
+      "tags": [
+        "Tank",
+        "Support"
+      ],
+      "twoWay": false,
+      "atlasIndex": 71
+    },
+    {
+      "id": "Lillia",
+      "name": "Lillia",
+      "subtitle": "the Bashful Bloom",
+      "tags": [
+        "Fighter",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 72
+    },
+    {
+      "id": "Lissandra",
+      "name": "Lissandra",
+      "subtitle": "the Ice Witch",
+      "tags": [
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 73
+    },
+    {
+      "id": "Locke",
+      "name": "Locke",
+      "subtitle": "the Ashen Exorcist",
+      "tags": [
+        "Assassin",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 74
+    },
+    {
+      "id": "Lucian",
+      "name": "Lucian",
+      "subtitle": "the Purifier",
+      "tags": [
+        "Marksman",
+        "Assassin"
+      ],
+      "twoWay": false,
+      "atlasIndex": 75
+    },
+    {
+      "id": "Lulu",
+      "name": "Lulu",
+      "subtitle": "the Fae Sorceress",
+      "tags": [
+        "Support",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 76
+    },
+    {
+      "id": "Lux",
+      "name": "Lux",
+      "subtitle": "the Lady of Luminosity",
+      "tags": [
+        "Mage",
+        "Support"
+      ],
+      "twoWay": false,
+      "atlasIndex": 77
+    },
+    {
+      "id": "Malphite",
+      "name": "Malphite",
+      "subtitle": "Shard of the Monolith",
+      "tags": [
+        "Tank",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 78
+    },
+    {
+      "id": "Malzahar",
+      "name": "Malzahar",
+      "subtitle": "the Prophet of the Void",
+      "tags": [
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 79
+    },
+    {
+      "id": "Maokai",
+      "name": "Maokai",
+      "subtitle": "the Twisted Treant",
+      "tags": [
+        "Tank",
+        "Support"
+      ],
+      "twoWay": false,
+      "atlasIndex": 80
+    },
+    {
+      "id": "MasterYi",
+      "name": "Master Yi",
+      "subtitle": "the Wuju Bladesman",
+      "tags": [
+        "Fighter",
+        "Assassin"
+      ],
+      "twoWay": false,
+      "atlasIndex": 81
+    },
+    {
+      "id": "Mel",
+      "name": "Mel",
+      "subtitle": "the Soul's Reflection",
+      "tags": [
+        "Mage",
+        "Support"
+      ],
+      "twoWay": false,
+      "atlasIndex": 82
+    },
+    {
+      "id": "Milio",
+      "name": "Milio",
+      "subtitle": "The Gentle Flame",
+      "tags": [
+        "Support",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 83
+    },
+    {
+      "id": "MissFortune",
+      "name": "Miss Fortune",
+      "subtitle": "the Bounty Hunter",
+      "tags": [
+        "Marksman",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 84
+    },
+    {
+      "id": "Mordekaiser",
+      "name": "Mordekaiser",
+      "subtitle": "the Iron Revenant",
+      "tags": [
+        "Fighter",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 85
+    },
+    {
+      "id": "Morgana",
+      "name": "Morgana",
+      "subtitle": "the Fallen",
+      "tags": [
+        "Support",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 86
+    },
+    {
+      "id": "Naafiri",
+      "name": "Naafiri",
+      "subtitle": "the Hound of a Hundred Bites",
+      "tags": [
+        "Assassin",
+        "Fighter"
+      ],
+      "twoWay": false,
+      "atlasIndex": 87
+    },
+    {
+      "id": "Nami",
+      "name": "Nami",
+      "subtitle": "the Tidecaller",
+      "tags": [
+        "Support",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 88
+    },
+    {
+      "id": "Nasus",
+      "name": "Nasus",
+      "subtitle": "the Curator of the Sands",
+      "tags": [
+        "Fighter",
+        "Tank"
+      ],
+      "twoWay": false,
+      "atlasIndex": 89
+    },
+    {
+      "id": "Nautilus",
+      "name": "Nautilus",
+      "subtitle": "the Titan of the Depths",
+      "tags": [
+        "Tank",
+        "Support"
+      ],
+      "twoWay": false,
+      "atlasIndex": 90
+    },
+    {
+      "id": "Neeko",
+      "name": "Neeko",
+      "subtitle": "the Curious Chameleon",
+      "tags": [
+        "Mage",
+        "Support"
+      ],
+      "twoWay": false,
+      "atlasIndex": 91
+    },
+    {
+      "id": "Nidalee",
+      "name": "Nidalee",
+      "subtitle": "the Bestial Huntress",
+      "tags": [
+        "Assassin",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 92
+    },
+    {
+      "id": "Nilah",
+      "name": "Nilah",
+      "subtitle": "the Joy Unbound",
+      "tags": [
+        "Fighter",
+        "Assassin"
+      ],
+      "twoWay": false,
+      "atlasIndex": 93
+    },
+    {
+      "id": "Nocturne",
+      "name": "Nocturne",
+      "subtitle": "the Eternal Nightmare",
+      "tags": [
+        "Fighter",
+        "Assassin"
+      ],
+      "twoWay": false,
+      "atlasIndex": 94
+    },
+    {
+      "id": "Nunu",
+      "name": "Nunu & Willump",
+      "subtitle": "the Boy and His Yeti",
+      "tags": [
+        "Tank",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 95
+    },
+    {
+      "id": "Olaf",
+      "name": "Olaf",
+      "subtitle": "the Berserker",
+      "tags": [
+        "Fighter",
+        "Tank"
+      ],
+      "twoWay": false,
+      "atlasIndex": 96
+    },
+    {
+      "id": "Orianna",
+      "name": "Orianna",
+      "subtitle": "the Lady of Clockwork",
+      "tags": [
+        "Mage",
+        "Support"
+      ],
+      "twoWay": false,
+      "atlasIndex": 97
+    },
+    {
+      "id": "Ornn",
+      "name": "Ornn",
+      "subtitle": "The Fire below the Mountain",
+      "tags": [
+        "Tank"
+      ],
+      "twoWay": false,
+      "atlasIndex": 98
+    },
+    {
+      "id": "Pantheon",
+      "name": "Pantheon",
+      "subtitle": "the Unbreakable Spear",
+      "tags": [
+        "Fighter",
+        "Assassin"
+      ],
+      "twoWay": false,
+      "atlasIndex": 99
+    },
+    {
+      "id": "Poppy",
+      "name": "Poppy",
+      "subtitle": "Keeper of the Hammer",
+      "tags": [
+        "Tank",
+        "Fighter"
+      ],
+      "twoWay": false,
+      "atlasIndex": 100
+    },
+    {
+      "id": "Pyke",
+      "name": "Pyke",
+      "subtitle": "the Bloodharbor Ripper",
+      "tags": [
+        "Support",
+        "Assassin"
+      ],
+      "twoWay": false,
+      "atlasIndex": 101
+    },
+    {
+      "id": "Qiyana",
+      "name": "Qiyana",
+      "subtitle": "Empress of the Elements",
+      "tags": [
+        "Assassin"
+      ],
+      "twoWay": false,
+      "atlasIndex": 102
+    },
+    {
+      "id": "Quinn",
+      "name": "Quinn",
+      "subtitle": "Demacia's Wings",
+      "tags": [
+        "Marksman",
+        "Assassin"
+      ],
+      "twoWay": false,
+      "atlasIndex": 103
+    },
+    {
+      "id": "Rakan",
+      "name": "Rakan",
+      "subtitle": "The Charmer",
+      "tags": [
+        "Support"
+      ],
+      "twoWay": false,
+      "atlasIndex": 104
+    },
+    {
+      "id": "Rammus",
+      "name": "Rammus",
+      "subtitle": "the Armordillo",
+      "tags": [
+        "Tank"
+      ],
+      "twoWay": false,
+      "atlasIndex": 105
+    },
+    {
+      "id": "RekSai",
+      "name": "Rek'Sai",
+      "subtitle": "the Void Burrower",
+      "tags": [
+        "Fighter",
+        "Tank"
+      ],
+      "twoWay": false,
+      "atlasIndex": 106
+    },
+    {
+      "id": "Rell",
+      "name": "Rell",
+      "subtitle": "the Iron Maiden",
+      "tags": [
+        "Tank",
+        "Support"
+      ],
+      "twoWay": false,
+      "atlasIndex": 107
+    },
+    {
+      "id": "Renata",
+      "name": "Renata Glasc",
+      "subtitle": "the Chem-Baroness",
+      "tags": [
+        "Support",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 108
+    },
+    {
+      "id": "Renekton",
+      "name": "Renekton",
+      "subtitle": "the Butcher of the Sands",
+      "tags": [
+        "Fighter",
+        "Tank"
+      ],
+      "twoWay": false,
+      "atlasIndex": 109
+    },
+    {
+      "id": "Rengar",
+      "name": "Rengar",
+      "subtitle": "the Pridestalker",
+      "tags": [
+        "Assassin",
+        "Fighter"
+      ],
+      "twoWay": false,
+      "atlasIndex": 110
+    },
+    {
+      "id": "Riven",
+      "name": "Riven",
+      "subtitle": "the Exile",
+      "tags": [
+        "Fighter",
+        "Assassin"
+      ],
+      "twoWay": false,
+      "atlasIndex": 111
+    },
+    {
+      "id": "Rumble",
+      "name": "Rumble",
+      "subtitle": "the Mechanized Menace",
+      "tags": [
+        "Fighter",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 112
+    },
+    {
+      "id": "Ryze",
+      "name": "Ryze",
+      "subtitle": "the Rune Mage",
+      "tags": [
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 113
+    },
+    {
+      "id": "Samira",
+      "name": "Samira",
+      "subtitle": "the Desert Rose",
+      "tags": [
+        "Marksman",
+        "Assassin"
+      ],
+      "twoWay": false,
+      "atlasIndex": 114
+    },
+    {
+      "id": "Sejuani",
+      "name": "Sejuani",
+      "subtitle": "Fury of the North",
+      "tags": [
+        "Tank"
+      ],
+      "twoWay": false,
+      "atlasIndex": 115
+    },
+    {
+      "id": "Senna",
+      "name": "Senna",
+      "subtitle": "the Redeemer",
+      "tags": [
+        "Support",
+        "Marksman"
+      ],
+      "twoWay": false,
+      "atlasIndex": 116
+    },
+    {
+      "id": "Seraphine",
+      "name": "Seraphine",
+      "subtitle": "the Starry-Eyed Songstress",
+      "tags": [
+        "Support",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 117
+    },
+    {
+      "id": "Sett",
+      "name": "Sett",
+      "subtitle": "the Boss",
+      "tags": [
+        "Fighter",
+        "Tank"
+      ],
+      "twoWay": false,
+      "atlasIndex": 118
+    },
+    {
+      "id": "Shaco",
+      "name": "Shaco",
+      "subtitle": "the Demon Jester",
+      "tags": [
+        "Assassin"
+      ],
+      "twoWay": false,
+      "atlasIndex": 119
+    },
+    {
+      "id": "Shen",
+      "name": "Shen",
+      "subtitle": "the Eye of Twilight",
+      "tags": [
+        "Tank"
+      ],
+      "twoWay": false,
+      "atlasIndex": 120
+    },
+    {
+      "id": "Shyvana",
+      "name": "Shyvana",
+      "subtitle": "the Half-Dragon",
+      "tags": [
+        "Fighter",
+        "Tank"
+      ],
+      "twoWay": false,
+      "atlasIndex": 121
+    },
+    {
+      "id": "Singed",
+      "name": "Singed",
+      "subtitle": "the Mad Chemist",
+      "tags": [
+        "Tank",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 122
+    },
+    {
+      "id": "Sion",
+      "name": "Sion",
+      "subtitle": "The Undead Juggernaut",
+      "tags": [
+        "Tank",
+        "Fighter"
+      ],
+      "twoWay": false,
+      "atlasIndex": 123
+    },
+    {
+      "id": "Sivir",
+      "name": "Sivir",
+      "subtitle": "the Battle Mistress",
+      "tags": [
+        "Marksman"
+      ],
+      "twoWay": false,
+      "atlasIndex": 124
+    },
+    {
+      "id": "Skarner",
+      "name": "Skarner",
+      "subtitle": "the Primordial Sovereign",
+      "tags": [
+        "Tank",
+        "Fighter"
+      ],
+      "twoWay": false,
+      "atlasIndex": 125
+    },
+    {
+      "id": "Smolder",
+      "name": "Smolder",
+      "subtitle": "the Fiery Fledgling",
+      "tags": [
+        "Marksman",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 126
+    },
+    {
+      "id": "Sona",
+      "name": "Sona",
+      "subtitle": "Maven of the Strings",
+      "tags": [
+        "Support",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 127
+    },
+    {
+      "id": "Soraka",
+      "name": "Soraka",
+      "subtitle": "the Starchild",
+      "tags": [
+        "Support",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 128
+    },
+    {
+      "id": "Swain",
+      "name": "Swain",
+      "subtitle": "the Noxian Grand General",
+      "tags": [
+        "Mage",
+        "Support"
+      ],
+      "twoWay": false,
+      "atlasIndex": 129
+    },
+    {
+      "id": "Sylas",
+      "name": "Sylas",
+      "subtitle": "the Unshackled",
+      "tags": [
+        "Mage",
+        "Assassin"
+      ],
+      "twoWay": false,
+      "atlasIndex": 130
+    },
+    {
+      "id": "Syndra",
+      "name": "Syndra",
+      "subtitle": "the Dark Sovereign",
+      "tags": [
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 131
+    },
+    {
+      "id": "TahmKench",
+      "name": "Tahm Kench",
+      "subtitle": "The River King",
+      "tags": [
+        "Tank",
+        "Support"
+      ],
+      "twoWay": false,
+      "atlasIndex": 132
+    },
+    {
+      "id": "Taliyah",
+      "name": "Taliyah",
+      "subtitle": "the Stoneweaver",
+      "tags": [
+        "Mage",
+        "Support"
+      ],
+      "twoWay": false,
+      "atlasIndex": 133
+    },
+    {
+      "id": "Talon",
+      "name": "Talon",
+      "subtitle": "the Blade's Shadow",
+      "tags": [
+        "Assassin"
+      ],
+      "twoWay": false,
+      "atlasIndex": 134
+    },
+    {
+      "id": "Taric",
+      "name": "Taric",
+      "subtitle": "the Shield of Valoran",
+      "tags": [
+        "Support",
+        "Tank"
+      ],
+      "twoWay": false,
+      "atlasIndex": 135
+    },
+    {
+      "id": "Teemo",
+      "name": "Teemo",
+      "subtitle": "the Swift Scout",
+      "tags": [
+        "Marksman",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 136
+    },
+    {
+      "id": "Thresh",
+      "name": "Thresh",
+      "subtitle": "the Chain Warden",
+      "tags": [
+        "Support",
+        "Tank"
+      ],
+      "twoWay": false,
+      "atlasIndex": 137
+    },
+    {
+      "id": "Tristana",
+      "name": "Tristana",
+      "subtitle": "the Yordle Gunner",
+      "tags": [
+        "Marksman",
+        "Assassin"
+      ],
+      "twoWay": false,
+      "atlasIndex": 138
+    },
+    {
+      "id": "Trundle",
+      "name": "Trundle",
+      "subtitle": "the Troll King",
+      "tags": [
+        "Fighter",
+        "Tank"
+      ],
+      "twoWay": false,
+      "atlasIndex": 139
+    },
+    {
+      "id": "Tryndamere",
+      "name": "Tryndamere",
+      "subtitle": "the Barbarian King",
+      "tags": [
+        "Fighter",
+        "Assassin"
+      ],
+      "twoWay": false,
+      "atlasIndex": 140
+    },
+    {
+      "id": "TwistedFate",
+      "name": "Twisted Fate",
+      "subtitle": "the Card Master",
+      "tags": [
+        "Mage",
+        "Marksman"
+      ],
+      "twoWay": false,
+      "atlasIndex": 141
+    },
+    {
+      "id": "Twitch",
+      "name": "Twitch",
+      "subtitle": "the Plague Rat",
+      "tags": [
+        "Marksman",
+        "Assassin"
+      ],
+      "twoWay": false,
+      "atlasIndex": 142
+    },
+    {
+      "id": "Udyr",
+      "name": "Udyr",
+      "subtitle": "the Spirit Walker",
+      "tags": [
+        "Fighter",
+        "Tank"
+      ],
+      "twoWay": false,
+      "atlasIndex": 143
+    },
+    {
+      "id": "Urgot",
+      "name": "Urgot",
+      "subtitle": "the Dreadnought",
+      "tags": [
+        "Fighter",
+        "Tank"
+      ],
+      "twoWay": false,
+      "atlasIndex": 144
+    },
+    {
+      "id": "Varus",
+      "name": "Varus",
+      "subtitle": "the Arrow of Retribution",
+      "tags": [
+        "Marksman",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 145
+    },
+    {
+      "id": "Vayne",
+      "name": "Vayne",
+      "subtitle": "the Night Hunter",
+      "tags": [
+        "Marksman",
+        "Assassin"
+      ],
+      "twoWay": false,
+      "atlasIndex": 146
+    },
+    {
+      "id": "Veigar",
+      "name": "Veigar",
+      "subtitle": "the Tiny Master of Evil",
+      "tags": [
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 147
+    },
+    {
+      "id": "Velkoz",
+      "name": "Vel'Koz",
+      "subtitle": "the Eye of the Void",
+      "tags": [
+        "Mage",
+        "Support"
+      ],
+      "twoWay": false,
+      "atlasIndex": 148
+    },
+    {
+      "id": "Vex",
+      "name": "Vex",
+      "subtitle": "the Gloomist",
+      "tags": [
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 149
+    },
+    {
+      "id": "Vi",
+      "name": "Vi",
+      "subtitle": "the Piltover Enforcer",
+      "tags": [
+        "Fighter",
+        "Assassin"
+      ],
+      "twoWay": false,
+      "atlasIndex": 150
+    },
+    {
+      "id": "Viego",
+      "name": "Viego",
+      "subtitle": "The Ruined King",
+      "tags": [
+        "Fighter",
+        "Assassin"
+      ],
+      "twoWay": false,
+      "atlasIndex": 151
+    },
+    {
+      "id": "Viktor",
+      "name": "Viktor",
+      "subtitle": "the Herald of the Arcane",
+      "tags": [
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 152
+    },
+    {
+      "id": "Vladimir",
+      "name": "Vladimir",
+      "subtitle": "the Crimson Reaper",
+      "tags": [
+        "Mage",
+        "Fighter"
+      ],
+      "twoWay": false,
+      "atlasIndex": 153
+    },
+    {
+      "id": "Volibear",
+      "name": "Volibear",
+      "subtitle": "the Relentless Storm",
+      "tags": [
+        "Fighter",
+        "Tank"
+      ],
+      "twoWay": false,
+      "atlasIndex": 154
+    },
+    {
+      "id": "Warwick",
+      "name": "Warwick",
+      "subtitle": "the Uncaged Wrath of Zaun",
+      "tags": [
+        "Fighter",
+        "Tank"
+      ],
+      "twoWay": false,
+      "atlasIndex": 155
+    },
+    {
+      "id": "MonkeyKing",
+      "name": "Wukong",
+      "subtitle": "the Monkey King",
+      "tags": [
+        "Fighter",
+        "Tank"
+      ],
+      "twoWay": false,
+      "atlasIndex": 156
+    },
+    {
+      "id": "Xayah",
+      "name": "Xayah",
+      "subtitle": "the Rebel",
+      "tags": [
+        "Marksman"
+      ],
+      "twoWay": false,
+      "atlasIndex": 157
+    },
+    {
+      "id": "Xerath",
+      "name": "Xerath",
+      "subtitle": "the Magus Ascendant",
+      "tags": [
+        "Mage",
+        "Support"
+      ],
+      "twoWay": false,
+      "atlasIndex": 158
+    },
+    {
+      "id": "XinZhao",
+      "name": "Xin Zhao",
+      "subtitle": "the Seneschal of Demacia",
+      "tags": [
+        "Fighter",
+        "Tank"
+      ],
+      "twoWay": false,
+      "atlasIndex": 159
+    },
+    {
+      "id": "Yasuo",
+      "name": "Yasuo",
+      "subtitle": "the Unforgiven",
+      "tags": [
+        "Fighter",
+        "Assassin"
+      ],
+      "twoWay": false,
+      "atlasIndex": 160
+    },
+    {
+      "id": "Yone",
+      "name": "Yone",
+      "subtitle": "the Unforgotten",
+      "tags": [
+        "Fighter",
+        "Assassin"
+      ],
+      "twoWay": false,
+      "atlasIndex": 161
+    },
+    {
+      "id": "Yorick",
+      "name": "Yorick",
+      "subtitle": "Shepherd of Souls",
+      "tags": [
+        "Fighter",
+        "Tank"
+      ],
+      "twoWay": false,
+      "atlasIndex": 162
+    },
+    {
+      "id": "Yunara",
+      "name": "Yunara",
+      "subtitle": "the Unbroken Faith",
+      "tags": [
+        "Marksman"
+      ],
+      "twoWay": false,
+      "atlasIndex": 163
+    },
+    {
+      "id": "Yuumi",
+      "name": "Yuumi",
+      "subtitle": "the Magical Cat",
+      "tags": [
+        "Support",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 164
+    },
+    {
+      "id": "Zaahen",
+      "name": "Zaahen",
+      "subtitle": "The Unsundered",
+      "tags": [
+        "Fighter"
+      ],
+      "twoWay": false,
+      "atlasIndex": 165
+    },
+    {
+      "id": "Zac",
+      "name": "Zac",
+      "subtitle": "the Secret Weapon",
+      "tags": [
+        "Tank",
+        "Fighter"
+      ],
+      "twoWay": false,
+      "atlasIndex": 166
+    },
+    {
+      "id": "Zed",
+      "name": "Zed",
+      "subtitle": "the Master of Shadows",
+      "tags": [
+        "Assassin"
+      ],
+      "twoWay": false,
+      "atlasIndex": 167
+    },
+    {
+      "id": "Zeri",
+      "name": "Zeri",
+      "subtitle": "The Spark of Zaun",
+      "tags": [
+        "Marksman"
+      ],
+      "twoWay": false,
+      "atlasIndex": 168
+    },
+    {
+      "id": "Ziggs",
+      "name": "Ziggs",
+      "subtitle": "the Hexplosives Expert",
+      "tags": [
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 169
+    },
+    {
+      "id": "Zilean",
+      "name": "Zilean",
+      "subtitle": "the Chronokeeper",
+      "tags": [
+        "Support",
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 170
+    },
+    {
+      "id": "Zoe",
+      "name": "Zoe",
+      "subtitle": "the Aspect of Twilight",
+      "tags": [
+        "Mage"
+      ],
+      "twoWay": false,
+      "atlasIndex": 171
+    },
+    {
+      "id": "Zyra",
+      "name": "Zyra",
+      "subtitle": "Rise of the Thorns",
+      "tags": [
+        "Mage",
+        "Support"
+      ],
+      "twoWay": false,
+      "atlasIndex": 172
+    }
+  ]
+}
