@@ -225,7 +225,7 @@ would be ~19M requests a month.
 | Piece       | Sizing                                                                                                            |
 | ----------- | ----------------------------------------------------------------------------------------------------------------- |
 | Reads       | All S3 via CloudFront `/m/*`; viewing, browsing and search never invoke Lambda                                    |
-| API Lambda  | Reserved concurrency 25. A 100-share burst takes ~5 s with up to 3 retries (see Results)                          |
+| API Lambda  | Reserved concurrency 50; at 25 a 100-share burst took ~5 s and all 3 retries (see Results)                        |
 | Client      | Share retries a 429/503 up to 3 times with jittered backoff and a fresh Turnstile token (§ Sharing configuration) |
 | DynamoDB    | On-demand. A full team is ~1.1 KB (2 WRU), a 150-character list ~25 WRU                                           |
 | Kill switch | Trips at 50,000 invocations/hour or 100,000 WRU/hour; peak is ~2,000 invocations/hour                             |
