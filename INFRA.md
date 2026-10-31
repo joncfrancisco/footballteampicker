@@ -1,7 +1,22 @@
 # Infrastructure
 
-Everything lives in AWS account `020949219706`, `us-east-1`. Full write-up comes with #15;
-this records the pieces that exist so far.
+Everything lives in AWS account `020949219706`, `us-east-1`. Deploying and operating it is
+in [DEPLOY.md](DEPLOY.md); moderation in [MODERATION.md](MODERATION.md).
+
+```
+depthchart.joncfrancis.co   Route 53 alias (zone joncfrancis.co, read as data, never owned)
+        │
+  CloudFront E374QW7TXASG40, flat-rate Free plan + WAF ACL footballteampicker-site
+   ├── /*            → S3 footballteampicker-site-020949219706 (OAC)    SPA + bundled seeds
+   ├── /t/*, /l/*    → same bucket via the SPA rewrite function          share pages
+   ├── /m/*          → S3 footballteampicker-media-020949219706 (OAC)   published JSON, atlases
+   └── /api/*        → Lambda footballteampicker-api function URL (OAC)  writes only
+                              │
+                        DynamoDB footballteampicker (on-demand, PITR)   source of truth
+```
+
+Every read is a cached S3 object; only writes run Lambda. Each write republishes the JSON
+viewers read (`m/t/`, `m/l/`, `m/browse/`).
 
 ## CI access (`bootstrap/`)
 
@@ -228,6 +243,42 @@ teams and staff in one second), run in a load-test window (DEPLOY.md). Both post
 scripts (burst 100/100 with no retries, flow 100% checks, no 5xx). Record the production
 numbers here: 5xx count, API p95, CloudFront p95 TTFB, Lambda throttles, kill-switch state,
 burst retries, and Free plan usage before and after.
+
+## Backups and recovery
+
+- **DynamoDB** is the source of truth: point-in-time recovery for 35 days, deletion protection
+  on. A restore creates a new table; point the Lambda's `TABLE` at it (Terraform) or copy back.
+- **Published JSON** under `m/t/`, `m/l/` and `m/browse/` can be regenerated from DynamoDB:
+  each is what the API writes after a save, so re-saving or a one-off script rebuilds them.
+- **Atlases** (`m/img/`, `m/seeds/`) are not backed up. Seed atlases are rebuilt from Data
+  Dragon by `bin/seed-lol`; a lost user atlas means that list's portraits are gone (teams
+  keep names and positions).
+- **Terraform state** is in the shared versioned bucket `tfstate-020949219706`.
+
+## Gotchas
+
+- **Lambda OAC needs a body hash.** CloudFront can't sign a POST/PUT for a Lambda function URL
+  unless the viewer sends `X-Amz-Content-Sha256` with the SHA-256 of the exact body. The web
+  client and the k6 scripts compute it; a request without it fails before reaching the code.
+- **SPA routes are a CloudFront Function**, not custom error responses, so a missing
+  `/m/t/<id>.json` is a real 404 that the app can show, not `index.html` with a 200.
+- **Free plan: managed policies only.** No custom cache, origin-request or response-header
+  policies, so the CSP is a build-time `<meta>` and cache lifetimes come from the objects'
+  `Cache-Control`. At most 5 behaviours (all used) and 5 WAF rules; no WAF CAPTCHA (hence
+  Turnstile); the web ACL can't be removed while subscribed.
+- **Reserved concurrency is outside Terraform's control** (`ignore_changes`), so a deploy never
+  undoes a kill-switch pause. `bin/killswitch off` is the only way back to 25.
+- **The boundary is bootstrap-owned.** A new AWS permission for the API needs both
+  `infra/api.tf` and `bootstrap/boundary.json`, and the second only applies when someone re-runs
+  `bootstrap/bootstrap.sh` with admin credentials.
+
+## Seed content terms
+
+The League of Legends list (`seed/league-of-legends/`) uses Riot Games assets from Data Dragon
+under Riot's "Legal Jibber Jabber" fan policy. That holds only while the site stays **free and
+non-commercial**, as the policy defines it, and shows the list's `disclaimer` wherever the list
+or a team built from it appears. Teams snapshot the disclaimer, so it survives seed updates.
+Monetizing the site means dropping or replacing this seed first.
 
 ## Deploys (`.github/workflows/deploy.yml`)
 
