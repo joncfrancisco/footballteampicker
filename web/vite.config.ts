@@ -30,7 +30,11 @@ export default defineConfig({
   plugins: [react(), contentSecurityPolicy()],
   server: {
     port: 5173,
-    proxy: { "/api": `http://localhost:${process.env.API_PORT ?? 8787}` },
+    // The local API serves both the write API and the published /m/* objects.
+    proxy: {
+      "/api": `http://localhost:${process.env.API_PORT ?? 8787}`,
+      "/m": `http://localhost:${process.env.API_PORT ?? 8787}`,
+    },
   },
   test: {
     name: "web",

@@ -52,8 +52,22 @@ Lambda `footballteampicker-api` (Node 22, arm64, 256 MB, 10 s, reserved concurre
 account's 1,000) behind CloudFront `/api/*` (managed `CachingDisabled` +
 `AllViewerExceptHostHeader`). Its function URL uses `AWS_IAM` auth and CloudFront signs with a
 Lambda OAC, so calling the URL directly returns 403. Role `footballteampicker-api` carries the
-`footballteampicker-boundary`. Logs: `/aws/lambda/footballteampicker-api`, 30 days. DynamoDB and
-the write routes arrive with #9.
+`footballteampicker-boundary`. Logs: `/aws/lambda/footballteampicker-api`, 30 days.
+
+Writes only: `POST /api/lists`, `PUT`/`DELETE /api/lists/:id` (edit token), `POST /api/teams`,
+`POST /api/reports`. Each write checks a Cloudflare Turnstile token first; the secret is the
+SecureString `/footballteampicker/turnstile-secret`, set out of band and read at runtime. Until
+it exists, writes answer 503 `writes_unavailable` (fail closed).
+
+## Data (`infra/data.tf`)
+
+- DynamoDB `footballteampicker`: single table (`PK`/`SK`), GSI1 (`PUBLIC` / `createdAt`) for
+  the browse index, on-demand, PITR, TTL on `expiresAt`, deletion protection.
+- S3 `footballteampicker-media-020949219706` behind CloudFront `/m/*` (OAC, `CachingOptimized`):
+  every read is one of these objects, published by the API after each write:
+  `m/t/<id>.json` (immutable), `m/l/<id>.json` and `m/browse/index.json` (`max-age=60`),
+  and from #10 list atlases under `m/a/`. The API never invalidates: lists and browse catch up
+  within a minute and teams never change. Takedowns invalidate from the admin script (#13).
 
 ## Deploys (`.github/workflows/deploy.yml`)
 

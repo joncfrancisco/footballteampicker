@@ -25,8 +25,9 @@ npm install
 npm run dev        # SPA on http://localhost:5173, API on :8787 (proxied at /api)
 ```
 
-The local API is the Lambda handler wrapped in a small Node server (`api/src/local.ts`),
-so it runs the same code as production.
+The local API (`api/src/local.ts`) runs the same API code as production in a plain Node
+server, with an in-memory store, Cloudflare's always-pass Turnstile test secret, and the
+published `/m/*` objects served from memory. Data resets when it restarts.
 
 ## Checks
 

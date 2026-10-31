@@ -1,5 +1,5 @@
-# The API Lambda behind CloudFront /api/*. #9 adds DynamoDB, the media bucket and the write
-# routes; this is the function, its URL and the behaviour, so deploys can smoke-test /api/health.
+# The API Lambda behind CloudFront /api/*: writes only. It stores to DynamoDB and publishes
+# JSON to the media bucket, which every read comes from (#9).
 
 data "archive_file" "api" {
   type        = "zip"
@@ -30,6 +30,42 @@ data "aws_iam_policy_document" "api" {
     actions   = ["logs:CreateLogStream", "logs:PutLogEvents"]
     resources = ["${aws_cloudwatch_log_group.api.arn}:*"]
   }
+
+  statement {
+    sid = "Table"
+    actions = [
+      "dynamodb:GetItem",
+      "dynamodb:PutItem",
+      "dynamodb:UpdateItem",
+      "dynamodb:DeleteItem",
+      "dynamodb:Query",
+    ]
+    resources = [aws_dynamodb_table.main.arn, "${aws_dynamodb_table.main.arn}/index/*"]
+  }
+
+  statement {
+    sid       = "PublishMedia"
+    actions   = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"]
+    resources = ["${aws_s3_bucket.media.arn}/m/*"]
+  }
+
+  # Turnstile secret and IP salt are SecureStrings set out of band, never in Terraform state.
+  statement {
+    sid       = "Secrets"
+    actions   = ["ssm:GetParameter"]
+    resources = ["arn:aws:ssm:us-east-1:${data.aws_caller_identity.current.account_id}:parameter/footballteampicker/*"]
+  }
+
+  statement {
+    sid       = "DecryptSecrets"
+    actions   = ["kms:Decrypt"]
+    resources = ["*"]
+    condition {
+      test     = "StringEquals"
+      variable = "kms:ViaService"
+      values   = ["ssm.us-east-1.amazonaws.com"]
+    }
+  }
 }
 
 resource "aws_iam_role_policy" "api" {
@@ -59,6 +95,15 @@ resource "aws_lambda_function" "api" {
   logging_config {
     log_format = "JSON"
     log_group  = aws_cloudwatch_log_group.api.name
+  }
+
+  environment {
+    variables = {
+      TABLE                  = aws_dynamodb_table.main.name
+      MEDIA_BUCKET           = aws_s3_bucket.media.bucket
+      TURNSTILE_SECRET_PARAM = "/footballteampicker/turnstile-secret"
+      SITE_HOSTNAME          = var.domain
+    }
   }
 
   depends_on = [aws_iam_role_policy.api]

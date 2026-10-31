@@ -1,23 +1,32 @@
-import type { APIGatewayProxyEventV2, APIGatewayProxyStructuredResultV2 } from "aws-lambda";
+import { CharacterList } from "@ftp/shared";
+import lol from "../../seed/league-of-legends/list.json";
+import { createApi } from "./app";
+import { ssmSecret, turnstile } from "./human";
+import { S3Publisher } from "./publish";
+import { DynamoStore } from "./store";
+import type { Event, Result } from "./types";
 
-export type Event = APIGatewayProxyEventV2;
-export type Result = APIGatewayProxyStructuredResultV2;
+export type { Event, Result };
 
-function json(statusCode: number, body: unknown): Result {
-  return {
-    statusCode,
-    headers: { "content-type": "application/json", "cache-control": "no-store" },
-    body: JSON.stringify(body),
-  };
-}
+const env = (name: string) => {
+  const v = process.env[name];
+  if (!v) throw new Error(`missing env ${name}`);
+  return v;
+};
+
+let api: ((e: Event) => Promise<Result>) | undefined;
 
 /** Lambda function URL entry point. CloudFront forwards only `/api/*` here. */
 export async function handler(event: Event): Promise<Result> {
-  const method = event.requestContext.http.method;
-  const path = event.rawPath;
-
-  if (path === "/api/health" && method === "GET") {
-    return json(200, { ok: true });
-  }
-  return json(404, { error: "not_found" });
+  api ??= createApi({
+    store: new DynamoStore(env("TABLE")),
+    publish: new S3Publisher(env("MEDIA_BUCKET")),
+    human: turnstile({
+      secret: ssmSecret(env("TURNSTILE_SECRET_PARAM")),
+      hostname: env("SITE_HOSTNAME"),
+    }),
+    seeds: [CharacterList.parse(lol)],
+    ipSalt: process.env.IP_SALT,
+  });
+  return api(event);
 }

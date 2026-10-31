@@ -5,7 +5,7 @@
       "Sid": "OwnTables",
       "Effect": "Allow",
       "Action": "dynamodb:*",
-      "Resource": "arn:aws:dynamodb:us-east-1:020949219706:table/footballteampicker-*"
+      "Resource": "arn:aws:dynamodb:us-east-1:020949219706:table/footballteampicker*"
     },
     {
       "Sid": "OwnBuckets",
@@ -26,18 +26,43 @@
       "Resource": "arn:aws:lambda:us-east-1:020949219706:function:footballteampicker-*"
     },
     {
+      "Sid": "OwnParameters",
+      "Effect": "Allow",
+      "Action": ["ssm:GetParameter", "ssm:GetParameters"],
+      "Resource": "arn:aws:ssm:us-east-1:020949219706:parameter/footballteampicker/*"
+    },
+    {
+      "Sid": "DecryptParametersViaSsm",
+      "Effect": "Allow",
+      "Action": "kms:Decrypt",
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "kms:ViaService": "ssm.us-east-1.amazonaws.com"
+        }
+      }
+    },
+    {
       "Sid": "InvalidateOwnDistribution",
       "Effect": "Allow",
       "Action": "cloudfront:CreateInvalidation",
       "Resource": "*",
-      "Condition": { "StringEquals": { "aws:ResourceTag/app": "footballteampicker" } }
+      "Condition": {
+        "StringEquals": {
+          "aws:ResourceTag/app": "footballteampicker"
+        }
+      }
     },
     {
       "Sid": "Metrics",
       "Effect": "Allow",
       "Action": "cloudwatch:PutMetricData",
       "Resource": "*",
-      "Condition": { "StringEquals": { "cloudwatch:namespace": "footballteampicker" } }
+      "Condition": {
+        "StringEquals": {
+          "cloudwatch:namespace": "footballteampicker"
+        }
+      }
     }
   ]
 }
