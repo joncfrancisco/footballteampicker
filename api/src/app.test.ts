@@ -179,6 +179,14 @@ describe("lists", () => {
     const stored = store.lists.get(id)!;
     expect(stored.editTokenHash).not.toContain(editToken);
     expect(publish.json(`m/l/${id}.json`)).not.toHaveProperty("editTokenHash");
+    expect(publish.json(`m/l/${id}.json`)).toMatchObject({ atlas: { src: "/m/a/abc.webp" } });
+    expect((publish.json("m/browse/index.json") as any).lists[0]).toMatchObject({
+      count: 3,
+      twoWayCount: 1,
+      cover: [0, 1, 2],
+      createdAt: "2026-11-01T00:00:00.000Z",
+      atlas: { src: "/m/a/abc.webp" },
+    });
     expect((publish.json("m/browse/index.json") as any).lists.map((l: any) => l.id)).toEqual([id]);
   });
 

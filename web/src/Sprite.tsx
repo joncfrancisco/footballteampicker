@@ -1,7 +1,15 @@
 import type { LoadedList } from "./lists";
 
 /** One portrait from a list's sprite atlas, drawn at `size` px. */
-export function Sprite({ list, index, size }: { list: LoadedList; index: number; size: number }) {
+export function Sprite({
+  list,
+  index,
+  size,
+}: {
+  list: Pick<LoadedList, "atlas" | "atlasUrl">;
+  index: number;
+  size: number;
+}) {
   const { columns, count } = list.atlas;
   const rows = Math.ceil(count / columns);
   return (

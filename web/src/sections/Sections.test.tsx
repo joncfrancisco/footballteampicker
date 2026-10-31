@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "../App";
 
 afterEach(() => vi.restoreAllMocks());
@@ -91,3 +91,6 @@ describe("optional sections", () => {
     expect(card("Akali")).toBeInTheDocument();
   });
 });
+
+beforeEach(() => window.history.replaceState(null, "", "/build/demo-lol"));
+afterEach(() => window.history.replaceState(null, "", "/"));
