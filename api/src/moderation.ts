@@ -99,8 +99,9 @@ export async function takedown(
           Key: key,
           UpdateExpression:
             type === "list"
-              ? "SET hidden = :hidden, version = version + :one REMOVE GSI1PK, GSI1SK"
-              : "SET hidden = :hidden",
+              ? "SET #hidden = :hidden, version = version + :one REMOVE GSI1PK, GSI1SK"
+              : "SET #hidden = :hidden",
+          ExpressionAttributeNames: { "#hidden": "hidden" },
           ConditionExpression: "attribute_exists(PK)",
           ExpressionAttributeValues: { ":hidden": true, ...(type === "list" ? { ":one": 1 } : {}) },
         }),
@@ -149,8 +150,9 @@ export async function takedown(
           Key: key,
           UpdateExpression:
             type === "list"
-              ? `SET hidden = :hidden, version = version + :one${isPublic ? ", GSI1PK = :public, GSI1SK = :created" : ""}`
-              : "SET hidden = :hidden",
+              ? `SET #hidden = :hidden, version = version + :one${isPublic ? ", GSI1PK = :public, GSI1SK = :created" : ""}`
+              : "SET #hidden = :hidden",
+          ExpressionAttributeNames: { "#hidden": "hidden" },
           ConditionExpression: "attribute_exists(PK)",
           ExpressionAttributeValues: {
             ":hidden": false,

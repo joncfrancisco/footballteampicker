@@ -43,7 +43,8 @@ describe("DynamoStore (single-table keys)", () => {
     });
     expect(update!.Item).not.toHaveProperty("GSI1PK");
     expect(update).toMatchObject({
-      ConditionExpression: "version = :v AND (attribute_not_exists(hidden) OR hidden = :no)",
+      ConditionExpression: "version = :v AND (attribute_not_exists(#hidden) OR #hidden = :no)",
+      ExpressionAttributeNames: { "#hidden": "hidden" },
       ExpressionAttributeValues: { ":v": 1, ":no": false },
     });
   });

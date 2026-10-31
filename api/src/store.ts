@@ -184,7 +184,11 @@ export class DynamoStore implements Store {
 
   async getList(id: string) {
     const r = await this.db.send(
-      new GetCommand({ TableName: this.table, Key: { PK: `LIST#${id}`, SK: "META" } }),
+      new GetCommand({
+        TableName: this.table,
+        Key: { PK: `LIST#${id}`, SK: "META" },
+        ConsistentRead: true,
+      }),
     );
     return r.Item ? strip<StoredList>(r.Item) : null;
   }
@@ -205,7 +209,8 @@ export class DynamoStore implements Store {
             ? { ConditionExpression: "attribute_not_exists(PK)" }
             : {
                 ConditionExpression:
-                  "version = :v AND (attribute_not_exists(hidden) OR hidden = :no)",
+                  "version = :v AND (attribute_not_exists(#hidden) OR #hidden = :no)",
+                ExpressionAttributeNames: { "#hidden": "hidden" },
                 ExpressionAttributeValues: { ":v": expectVersion, ":no": false },
               }),
         }),
@@ -293,9 +298,10 @@ export class DynamoStore implements Store {
         new UpdateCommand({
           TableName: this.table,
           Key: { PK: `LIST#${id}`, SK: "META" },
-          UpdateExpression: "SET hidden = :yes, version = version + :one REMOVE GSI1PK, GSI1SK",
+          UpdateExpression: "SET #hidden = :yes, version = version + :one REMOVE GSI1PK, GSI1SK",
           ConditionExpression:
-            "attribute_exists(PK) AND (attribute_not_exists(hidden) OR hidden = :no)",
+            "attribute_exists(PK) AND (attribute_not_exists(#hidden) OR #hidden = :no)",
+          ExpressionAttributeNames: { "#hidden": "hidden" },
           ExpressionAttributeValues: { ":yes": true, ":no": false, ":one": 1 },
         }),
       );
