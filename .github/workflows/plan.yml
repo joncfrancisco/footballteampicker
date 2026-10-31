@@ -1,0 +1,31 @@
+name: Terraform plan
+
+# PRs plan with the read-only role. The production run (manual, main only) proves the
+# deploy role works; deploy.yml takes over applying.
+on:
+  pull_request:
+    paths: ["infra/**", ".github/workflows/plan.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'workflow_dispatch' && 'production' || null }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ github.event_name == 'workflow_dispatch' && vars.AWS_ROLE_ARN || vars.AWS_PLAN_ROLE_ARN }}
+          aws-region: us-east-1
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+      - run: terraform -chdir=infra init -input=false
+      - name: terraform plan
+        run: |
+          terraform -chdir=infra plan -input=false -no-color -out=tfplan | tee plan.txt
+          { echo '```'; cat plan.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
