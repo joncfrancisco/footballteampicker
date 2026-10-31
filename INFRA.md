@@ -49,7 +49,7 @@ rule (2,000/5 min, all paths) plus three AWS managed groups; see § Write protec
 
 ## API (`infra/api.tf`)
 
-Lambda `footballteampicker-api` (Node 22, arm64, 256 MB, 10 s, reserved concurrency 25 of the
+Lambda `footballteampicker-api` (Node 22, arm64, 256 MB, 10 s, reserved concurrency 50 of the
 account's 1,000) behind CloudFront `/api/*` (managed `CachingDisabled` +
 `AllViewerExceptHostHeader`). Its function URL uses `AWS_IAM` auth and CloudFront signs with a
 Lambda OAC, so calling the URL directly returns 403. Role `footballteampicker-api` carries the
@@ -171,7 +171,7 @@ sessions are single use, expire after ten minutes, and authorize only one list s
 CloudWatch API invocations >50,000/hour or table consumed write units >100,000/hour
 notify SNS, which invokes `footballteampicker-killswitch`. That function accepts only these
 two ALARM messages from the account's own alert topic and sets API reserved concurrency
-to zero. Its separate concurrency reservation is 1. API concurrency normally stays at 25;
+to zero. Its separate concurrency reservation is 1. API concurrency normally stays at 50;
 Terraform ignores changes to that setting so a deploy cannot silently lift an active pause.
 The API and switch log groups retain 30 days. Account concurrency was verified at 1,000.
 
@@ -187,8 +187,8 @@ $0.625/million request units. At 256 MB and 250 ms, 50,000 invocations consume 3
 GB-seconds: **$0.051667** including request charges. 100,000 write units cost **$0.0625**.
 These are examples at the trigger thresholds, not a guaranteed spend ceiling: large roster
 items consume multiple write units, alarms evaluate hourly and have delivery delay, and
-logs, reads, S3, Secrets Manager, and SNS have separate charges. If all 25 slots run continuously,
-one hour consumes 22,500 GB-seconds: **$0.300002 compute**, before request charges. Repeated
+logs, reads, S3, Secrets Manager, and SNS have separate charges. If all 50 slots run continuously,
+one hour consumes 45,000 GB-seconds: **$0.600003 compute**, before request charges. Repeated
 invalid requests can accumulate invocation charges even without writes. CloudFront and its
 included WAF use the $0 Free plan with no overages; delivery can be slowed at excess usage.
 Presigned uploads cap each object at 1.5 MB and require a verified session; reused presigned

@@ -102,8 +102,9 @@ resource "aws_lambda_function" "api" {
   source_code_hash = data.archive_file.api.output_base64sha256
   memory_size      = 256
   timeout          = 10
-  # Hard cap (#17, #18). The kill switch drops this to 0.
-  reserved_concurrent_executions = 25
+  # Hard cap (#17, #18). 25 used up every share retry in the 100-share burst test. The kill
+  # switch drops this to 0. Terraform ignores changes, so a new value is applied with the CLI.
+  reserved_concurrent_executions = 50
 
   lifecycle {
     # A deploy must not silently undo an operational or automatic write pause.
