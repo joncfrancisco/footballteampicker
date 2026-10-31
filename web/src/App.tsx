@@ -1,20 +1,23 @@
 import { newTeam, type Team } from "@ftp/shared";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Builder } from "./Builder";
 import { fillDemo } from "./demo";
+import { loadDraft, saveDraft } from "./draft";
 import { SEED_LISTS } from "./lists";
 
 const list = SEED_LISTS[0]!;
-
-function initialTeam(): Team {
-  const team = newTeam(list);
-  return new URLSearchParams(window.location.search).get("fill") === "demo"
-    ? fillDemo(team, list)
-    : team;
-}
+// ?fill=demo is for screenshots and checks; it never touches the saved draft.
+const isDemo = () => new URLSearchParams(window.location.search).get("fill") === "demo";
 
 export function App() {
-  const [team, setTeam] = useState(initialTeam);
+  const [demo] = useState(isDemo);
+  const [team, setTeam] = useState<Team>(() =>
+    demo ? fillDemo(newTeam(list), list) : (loadDraft(list) ?? newTeam(list)),
+  );
+
+  useEffect(() => {
+    if (!demo) saveDraft(team);
+  }, [demo, team]);
 
   return (
     <>

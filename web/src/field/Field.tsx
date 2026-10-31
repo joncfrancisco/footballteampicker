@@ -1,6 +1,7 @@
-import { LOS_Y, atRef, refLabel, type Depth, type Slot } from "@ftp/shared";
+import { LOS_Y, refLabel, type Slot } from "@ftp/shared";
 import { useMemo } from "react";
-import type { LoadedList } from "../lists";
+import { useSpot } from "../dnd/useSpot";
+import { useLineup } from "../dnd/Lineup";
 import { Sprite } from "../Sprite";
 import { useWidth } from "../useSize";
 import { layoutSlots } from "./layout";
@@ -9,15 +10,13 @@ import { NARROW_WIDTH, SCALE, TILE } from "./views";
 type Props = {
   side: "offense" | "defense";
   slots: Slot[];
-  depth: Depth;
-  list: LoadedList;
   /** Field rows to show (0–100 field units). */
   yMin: number;
   yMax: number;
 };
 
 /** One side of the ball: turf, lines and the formation's 11 slots. */
-export function Field({ side, slots, depth, list, yMin, yMax }: Props) {
+export function Field({ side, slots, yMin, yMax }: Props) {
   const [ref, width] = useWidth<HTMLDivElement>();
   const narrow = width > 0 && width < NARROW_WIDTH;
   const tile = narrow ? TILE.narrow : TILE.wide;
@@ -48,32 +47,67 @@ export function Field({ side, slots, depth, list, yMin, yMax }: Props) {
       data-testid={`field-${side}`}
     >
       <FieldLines yMin={yMin} yMax={yMax} />
-      {placed.map((p) => {
-        const slot = byId.get(p.id)!;
-        const charId = atRef(depth, slot.ref);
-        const character = charId ? list.byId.get(charId) : undefined;
-        return (
-          <div
-            key={slot.id}
-            className={`slot${character ? " filled" : ""}`}
-            data-slot={slot.id}
-            data-ref={refLabel(slot.ref)}
-            style={{ left: p.left, top: p.top, width: tile.width, height: tile.height }}
-            title={`${slot.label} · ${refLabel(slot.ref)}${character ? `: ${character.name}` : ""}`}
-          >
-            {character ? (
-              <>
-                <Sprite list={list} index={character.atlasIndex} size={tile.sprite} />
-                {!narrow && <span className="slot-name">{character.name}</span>}
-              </>
-            ) : null}
-            <span className="slot-label">
-              {narrow ? refLabel(slot.ref) : `${slot.label} · ${refLabel(slot.ref)}`}
-            </span>
-          </div>
-        );
-      })}
+      {placed.map((p) => (
+        <SlotTile
+          key={p.id}
+          side={side}
+          slot={byId.get(p.id)!}
+          left={p.left}
+          top={p.top}
+          tile={tile}
+          narrow={narrow}
+        />
+      ))}
     </div>
+  );
+}
+
+function SlotTile(props: {
+  side: "offense" | "defense";
+  slot: Slot;
+  left: number;
+  top: number;
+  tile: { width: number; height: number; sprite: number };
+  narrow: boolean;
+}) {
+  const { side, slot, left, top, tile, narrow } = props;
+  const { list } = useLineup();
+  const spot = { side, pos: slot.ref.pos, index: slot.ref.depth - 1 };
+  const s = useSpot(spot);
+  const ref = refLabel(slot.ref);
+  return (
+    <button
+      ref={s.setNodeRef}
+      {...s.buttonProps}
+      className={[
+        "slot",
+        s.character && "filled",
+        s.isOver && "over",
+        s.isDragging && "dragging",
+        s.isSelected && "selected",
+        s.isTarget && "target",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+      data-slot={slot.id}
+      data-ref={ref}
+      // Centred by offset, not transform: dnd-kit measures drop targets ignoring transforms.
+      style={{
+        left: left - tile.width / 2,
+        top: top - tile.height / 2,
+        width: tile.width,
+        height: tile.height,
+      }}
+      title={`${slot.label} · ${ref}${s.character ? `: ${s.character.name}` : ""}`}
+    >
+      {s.character ? (
+        <>
+          <Sprite list={list} index={s.character.atlasIndex} size={tile.sprite} />
+          {!narrow && <span className="slot-name">{s.character.name}</span>}
+        </>
+      ) : null}
+      <span className="slot-label">{narrow ? ref : `${slot.label} · ${ref}`}</span>
+    </button>
   );
 }
 

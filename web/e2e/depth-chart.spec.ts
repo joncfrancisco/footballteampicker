@@ -22,20 +22,20 @@ for (const width of [1440, 375]) {
     await page.getByRole("button", { name: "Depth chart" }).click();
 
     const offense = page.getByTestId("depth-offense");
-    const wr4 = offense.locator('[data-spot="WR4"] button');
+    const wr4 = offense.locator('[data-spot="WR4"]');
     const name = (await wr4.getAttribute("aria-label"))!.split(",")[0]!;
-    const oldWr2 = (await offense
-      .locator('[data-spot="WR2"] button')
-      .getAttribute("aria-label"))!.split(",")[0]!;
+    const oldWr2 = (await offense.locator('[data-spot="WR2"]').getAttribute("aria-label"))!.split(
+      ",",
+    )[0]!;
 
     await drag(page, wr4, offense.locator('[data-spot="WR2"]'));
 
-    await expect(offense.locator('[data-spot="WR2"] button')).toHaveAttribute(
+    await expect(offense.locator('[data-spot="WR2"]')).toHaveAttribute(
       "aria-label",
       `${name}, offense WR2`,
     );
     // Reorder, not swap: the old WR2 slides down to WR3.
-    await expect(offense.locator('[data-spot="WR3"] button')).toHaveAttribute(
+    await expect(offense.locator('[data-spot="WR3"]')).toHaveAttribute(
       "aria-label",
       `${oldWr2}, offense WR3`,
     );
@@ -55,22 +55,16 @@ test("drag a defender to another row swaps them", async ({ page }) => {
   await page.getByRole("button", { name: "Depth chart" }).click();
   const defense = page.getByTestId("depth-defense");
   const label = async (spot: string) =>
-    (await defense.locator(`[data-spot="${spot}"] button`).getAttribute("aria-label"))!.split(
-      ",",
-    )[0];
+    (await defense.locator(`[data-spot="${spot}"]`).getAttribute("aria-label"))!.split(",")[0];
   const [ss, fs] = [await label("SS1"), await label("FS1")];
 
-  await drag(
-    page,
-    defense.locator('[data-spot="SS1"] button'),
-    defense.locator('[data-spot="FS1"]'),
-  );
+  await drag(page, defense.locator('[data-spot="SS1"]'), defense.locator('[data-spot="FS1"]'));
 
-  await expect(defense.locator('[data-spot="FS1"] button')).toHaveAttribute(
+  await expect(defense.locator('[data-spot="FS1"]')).toHaveAttribute(
     "aria-label",
     `${ss}, defense FS1`,
   );
-  await expect(defense.locator('[data-spot="SS1"] button')).toHaveAttribute(
+  await expect(defense.locator('[data-spot="SS1"]')).toHaveAttribute(
     "aria-label",
     `${fs}, defense SS1`,
   );

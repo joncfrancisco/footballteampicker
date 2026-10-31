@@ -1,12 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
+  autoFill,
+  clearSide,
   move,
   movedNotice,
   place,
+  randomize,
   remove,
   shapeErrors,
   spotsOf,
   switchFront,
+  usage,
   violations,
   type Result,
   type Roster,
@@ -180,5 +184,46 @@ describe("violations and shape", () => {
     t.defense.depth.NT = [null, null];
     t.offense.depth.WR = [null];
     expect(shapeErrors(t)).toEqual(["offense WR must have 6 spots", "defense has no NT row"]);
+  });
+});
+
+describe("pool helpers", () => {
+  const ids = Object.keys(chars);
+
+  it("tracks which sides each character plays", () => {
+    const t = team(["braum", O("LT", 1)], ["braum", D("NB", 1)], ["ahri", O("QB", 1)]);
+    const u = usage(t);
+    expect([...u.get("braum")!].sort()).toEqual(["defense", "offense"]);
+    expect([...u.get("ahri")!]).toEqual(["offense"]);
+    expect(u.has("zed")).toBe(false);
+  });
+
+  it("clears one side only", () => {
+    const t = clearSide(team(["ahri", O("QB", 1)], ["jinx", D("FS", 1)]), "offense");
+    expect(spotsOf(t, "ahri")).toEqual([]);
+    expect(spotsOf(t, "jinx")).toEqual([D("FS", 1)]);
+  });
+
+  it("auto-fills empty spots from unused characters, keeping existing ones, never two-way", () => {
+    const t = autoFill(team(["braum", O("QB", 1)]), ids);
+    expect(t.offense.depth.QB).toEqual(["braum", "ahri", "jinx"]);
+    expect(t.offense.depth.RB).toEqual(["leona", "zed", null]);
+    expect(spotsOf(t, "braum")).toEqual([O("QB", 1)]);
+    expect(violations(t, roster)).toEqual([]);
+  });
+
+  it("randomizes into a valid lineup using each character once", () => {
+    let seed = 1;
+    const rng = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const big = new Map(
+      Array.from({ length: 60 }, (_, i) => [`c${i}`, { name: `C${i}`, twoWay: false }]),
+    );
+    const t = randomize(newTeam({ id: "l", ip: "X" }), [...big.keys()], rng);
+    expect(violations(t, big)).toEqual([]);
+    const placed = [...Object.values(t.offense.depth), ...Object.values(t.defense.depth)]
+      .flat()
+      .filter((id) => id !== null);
+    expect(placed).toHaveLength(52);
+    expect(new Set(placed).size).toBe(52);
   });
 });

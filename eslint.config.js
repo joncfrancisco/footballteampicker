@@ -10,6 +10,8 @@ export default tseslint.config(
   {
     files: ["**/*.{ts,tsx}"],
     languageOptions: { globals: { ...globals.node } },
+    // `const { omit, ...rest } = obj` is how we drop a key.
+    rules: { "@typescript-eslint/no-unused-vars": ["error", { ignoreRestSiblings: true }] },
   },
   {
     files: ["web/src/**/*.{ts,tsx}"],

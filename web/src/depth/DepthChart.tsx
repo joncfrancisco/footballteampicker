@@ -1,4 +1,3 @@
-import { useDraggable, useDroppable } from "@dnd-kit/core";
 import {
   formationLabel,
   refLabel,
@@ -8,8 +7,8 @@ import {
   type Spot,
   type Team,
 } from "@ftp/shared";
-import { memo } from "react";
-import { spotId, spotLabel } from "../dnd/ids";
+import { spotLabel } from "../dnd/ids";
+import { useSpot } from "../dnd/useSpot";
 import type { LoadedList } from "../lists";
 import { Sprite } from "../Sprite";
 
@@ -79,16 +78,10 @@ function SideTable(props: {
             {Array.from({ length: COLUMNS }, (_, index) => {
               if (index >= n) return <td key={index} className="depth-none" />;
               const spot = { side, pos, index };
-              const id = team[side].depth[pos]?.[index] ?? null;
               const starter = starters.has(spotLabel(spot));
               return (
                 <td key={index}>
-                  <Cell
-                    spot={spot}
-                    list={list}
-                    charId={id}
-                    starter={starter ? usedBy : undefined}
-                  />
+                  <Cell spot={spot} list={list} starter={starter ? usedBy : undefined} />
                 </td>
               );
             })}
@@ -99,50 +92,40 @@ function SideTable(props: {
   );
 }
 
-const Cell = memo(function Cell(props: {
+function Cell(props: {
   spot: Spot;
   list: LoadedList;
-  charId: string | null;
   /** Formation label if this spot is a starter in the current formation. */
   starter?: string;
 }) {
-  const { spot, list, charId, starter } = props;
-  const id = spotId(spot);
-  const label = spotLabel(spot);
-  const character = charId ? list.byId.get(charId) : undefined;
-  const drop = useDroppable({ id });
-  const drag = useDraggable({ id, disabled: !character });
-
+  const { spot, list, starter } = props;
+  const s = useSpot(spot);
   return (
-    <div
-      ref={drop.setNodeRef}
+    <button
+      ref={s.setNodeRef}
+      {...s.buttonProps}
       className={[
         "depth-cell",
-        character && "filled",
+        s.character && "filled",
         starter && "starter",
-        drop.isOver && "over",
-        drag.isDragging && "dragging",
+        s.isOver && "over",
+        s.isDragging && "dragging",
+        s.isSelected && "selected",
+        s.isTarget && "target",
       ]
         .filter(Boolean)
         .join(" ")}
-      data-spot={label}
-      title={starter ? `${label}: starter in ${starter}` : label}
+      data-spot={s.label}
+      title={starter ? `${s.label}: starter in ${starter}` : s.label}
     >
-      {character ? (
-        <button
-          ref={drag.setNodeRef}
-          type="button"
-          className="depth-card"
-          aria-label={`${character.name}, ${spot.side} ${label}`}
-          {...drag.listeners}
-          {...drag.attributes}
-        >
-          <Sprite list={list} index={character.atlasIndex} size={32} />
-          <span className="depth-name">{character.name}</span>
-        </button>
+      {s.character ? (
+        <>
+          <Sprite list={list} index={s.character.atlasIndex} size={32} />
+          <span className="depth-name">{s.character.name}</span>
+        </>
       ) : (
-        <span className="depth-empty">{label}</span>
+        <span className="depth-empty">{s.label}</span>
       )}
-    </div>
+    </button>
   );
-});
+}
