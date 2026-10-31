@@ -1,0 +1,76 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Never apply two pushes at once; let a running deploy finish.
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    needs: ci
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # web/dist for S3; api/dist is zipped by Terraform (source_code_hash), so code and
+      # infra changes share one path.
+      - run: npm run build
+
+      - uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+      - run: terraform -chdir=infra init -input=false
+      - name: terraform plan
+        run: |
+          terraform -chdir=infra plan -input=false -no-color -out=tfplan | tee plan.txt
+          { echo '## terraform plan'; echo '```'; cat plan.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+      - run: terraform -chdir=infra apply -input=false -no-color tfplan
+
+      - name: Upload site
+        run: |
+          bucket=$(terraform -chdir=infra output -raw site_bucket)
+          # Hashed assets are immutable; index.html must always revalidate.
+          aws s3 sync web/dist/assets "s3://$bucket/assets" --delete \
+            --cache-control "public,max-age=31536000,immutable"
+          aws s3 sync web/dist "s3://$bucket" --delete --exclude "assets/*" \
+            --cache-control "no-cache"
+
+      - name: Invalidate index.html
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "$(terraform -chdir=infra output -raw distribution_id)" \
+            --paths /index.html
+
+      - name: Smoke test
+        run: |
+          url=$(terraform -chdir=infra output -raw site_url)
+          curl -fsS -o /dev/null "$url"
+          # Check the body too: a missing /api/* behaviour would fall through to index.html.
+          for i in 1 2 3 4 5; do
+            body=$(curl -fsS "${url}api/health") && grep -q '"ok":true' <<<"$body" && exit 0
+            echo "attempt $i: ${body:-request failed}"; sleep 10
+          done
+          exit 1
