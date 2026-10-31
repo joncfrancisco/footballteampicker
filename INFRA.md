@@ -1,7 +1,22 @@
 # Infrastructure
 
-Everything lives in AWS account `020949219706`, `us-east-1`. Full write-up comes with #15;
-this records the pieces that exist so far.
+Everything lives in AWS account `020949219706`, `us-east-1`. Deploying and operating it is
+in [DEPLOY.md](DEPLOY.md); moderation in [MODERATION.md](MODERATION.md).
+
+```
+depthchart.joncfrancis.co   Route 53 alias (zone joncfrancis.co, read as data, never owned)
+        │
+  CloudFront E374QW7TXASG40, flat-rate Free plan + WAF ACL footballteampicker-site
+   ├── /*            → S3 footballteampicker-site-020949219706 (OAC)    SPA + bundled seeds
+   ├── /t/*, /l/*    → same bucket via the SPA rewrite function          share pages
+   ├── /m/*          → S3 footballteampicker-media-020949219706 (OAC)   published JSON, atlases
+   └── /api/*        → Lambda footballteampicker-api function URL (OAC)  writes only
+                              │
+                        DynamoDB footballteampicker (on-demand, PITR)   source of truth
+```
+
+Every read is a cached S3 object; only writes run Lambda. Each write republishes the JSON
+viewers read (`m/t/`, `m/l/`, `m/browse/`).
 
 ## CI access (`bootstrap/`)
 
@@ -210,7 +225,7 @@ would be ~19M requests a month.
 | Piece       | Sizing                                                                                                            |
 | ----------- | ----------------------------------------------------------------------------------------------------------------- |
 | Reads       | All S3 via CloudFront `/m/*`; viewing, browsing and search never invoke Lambda                                    |
-| API Lambda  | Reserved concurrency 25; a write is ~250 ms, so 25 drains a 100-share burst in ~1 s                               |
+| API Lambda  | Reserved concurrency 50; at 25 a 100-share burst took ~5 s and all 3 retries (see Results)                        |
 | Client      | Share retries a 429/503 up to 3 times with jittered backoff and a fresh Turnstile token (§ Sharing configuration) |
 | DynamoDB    | On-demand. A full team is ~1.1 KB (2 WRU), a 150-character list ~25 WRU                                           |
 | Kill switch | Trips at 50,000 invocations/hour or 100,000 WRU/hour; peak is ~2,000 invocations/hour                             |
@@ -224,10 +239,60 @@ share 1 in 3 → open a team link → browse) and `loadtest/burst.js` (100 full 
 teams and staff in one second), run in a load-test window (DEPLOY.md). Both post the teams in
 `loadtest/teams.json`, which `api/src/loadtest.test.ts` keeps valid against the shared rules.
 
-**Results:** not yet run against production. A local rehearsal on 2026-10-31 passed both
-scripts (burst 100/100 with no retries, flow 100% checks, no 5xx). Record the production
-numbers here: 5xx count, API p95, CloudFront p95 TTFB, Lambda throttles, kill-switch state,
-burst retries, and Free plan usage before and after.
+**Results (production, 2026-10-31):** both scripts passed every threshold.
+
+| Run   | Requests            | Shares stored | 5xx | Checks | API p95 (client) | Static p95 TTFB | Throttles | Peak concurrency |
+| ----- | ------------------- | ------------- | --- | ------ | ---------------- | --------------- | --------- | ---------------- |
+| flow  | 5,270 over 10.5 min | 312           | 0   | 100%   | 201 ms           | 80 ms           | 0         | 2                |
+| burst | 279 in 4.6 s        | 100 of 100    | 0   | 100%   | 2.15 s           | n/a             | 178       | 25 (the cap)     |
+
+- The flow's 35% `http_req_failed` is expected: the browse index 404s until the first public
+  list is saved, and each iteration fetches it twice. The checks accept that 404.
+- **The burst is at the edge of the retry budget.** It does not drain in ~1 s as the sizing table
+  assumes: 178 attempts were throttled and returned as 429 (4xx, not 5xx). The share retry
+  absorbed every one, but retries averaged 1.78 and reached the maximum of 3, so a bigger burst
+  would start failing shares. The slowest share took 4.6 s.
+- The throttles alarm stayed OK as designed (it needs throttling in three five-minute periods),
+  as did the other alarms. The kill switch did not trip and reserved concurrency stayed at 25.
+- Published load-test teams stay in `m/t/` (unlisted, reachable only by id).
+
+Still to record: Free plan usage before and after.
+
+## Backups and recovery
+
+- **DynamoDB** is the source of truth: point-in-time recovery for 35 days, deletion protection
+  on. A restore creates a new table; point the Lambda's `TABLE` at it (Terraform) or copy back.
+- **Published JSON** under `m/t/`, `m/l/` and `m/browse/` can be regenerated from DynamoDB:
+  each is what the API writes after a save, so re-saving or a one-off script rebuilds them.
+- **Atlases** (`m/img/`, `m/seeds/`) are not backed up. Seed atlases are rebuilt from Data
+  Dragon by `bin/seed-lol`; a lost user atlas means that list's portraits are gone (teams
+  keep names and positions).
+- **Terraform state** is in the shared versioned bucket `tfstate-020949219706`.
+
+## Gotchas
+
+- **Lambda OAC needs a body hash.** CloudFront can't sign a POST/PUT for a Lambda function URL
+  unless the viewer sends `X-Amz-Content-Sha256` with the SHA-256 of the exact body. The web
+  client and the k6 scripts compute it; a request without it fails before reaching the code.
+- **SPA routes are a CloudFront Function**, not custom error responses, so a missing
+  `/m/t/<id>.json` is a real 404 that the app can show, not `index.html` with a 200.
+- **Free plan: managed policies only.** No custom cache, origin-request or response-header
+  policies, so the CSP is a build-time `<meta>` and cache lifetimes come from the objects'
+  `Cache-Control`. At most 5 behaviours (all used) and 5 WAF rules; no WAF CAPTCHA (hence
+  Turnstile); the web ACL can't be removed while subscribed.
+- **Reserved concurrency is outside Terraform's control** (`ignore_changes`), so a deploy never
+  undoes a kill-switch pause. `bin/killswitch off` is the only way back to 25.
+- **The boundary is bootstrap-owned.** A new AWS permission for the API needs both
+  `infra/api.tf` and `bootstrap/boundary.json`, and the second only applies when someone re-runs
+  `bootstrap/bootstrap.sh` with admin credentials.
+
+## Seed content terms
+
+The League of Legends list (`seed/league-of-legends/`) uses Riot Games assets from Data Dragon
+under Riot's "Legal Jibber Jabber" fan policy. That holds only while the site stays **free and
+non-commercial**, as the policy defines it, and shows the list's `disclaimer` wherever the list
+or a team built from it appears. Teams snapshot the disclaimer, so it survives seed updates.
+Monetizing the site means dropping or replacing this seed first.
 
 ## Deploys (`.github/workflows/deploy.yml`)
 
