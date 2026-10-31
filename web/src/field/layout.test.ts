@@ -3,9 +3,10 @@ import { describe, expect, it } from "vitest";
 import { layoutSlots, type Placed } from "./layout";
 import { SCALE, TILE, VIEW } from "./views";
 
-// Narrowest supported phone (375px) inside the 16px gutters; the facing layout's minimum width.
+// Narrowest supported phone (375px) inside the 16px gutters, and the facing layout at its
+// minimum: 1100px less gutters, the 320px pool and the gap.
 const PHONE = { width: 343, scale: SCALE.narrow, tile: TILE.narrow };
-const DESKTOP = { width: 1068, scale: SCALE.wide, tile: TILE.wide };
+const DESKTOP = { width: 732, scale: SCALE.wide, tile: TILE.wide };
 
 function overlaps(placed: Placed[], tile: { width: number; height: number }) {
   const bad: string[] = [];

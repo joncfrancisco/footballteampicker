@@ -11,6 +11,19 @@ export function parseSpotId(id: string | number): Spot | null {
   return { side, pos, index: Number(index) };
 }
 
+/** Pool cards drag as "pool:<characterId>". */
+export function poolId(charId: string): string {
+  return `pool:${charId}`;
+}
+
+export function parsePoolId(id: string | number): string | null {
+  const s = String(id);
+  return s.startsWith("pool:") ? s.slice(5) : null;
+}
+
+/** The pool itself is a drop target: dropping a placed character there removes them. */
+export const POOL_DROP = "pool-drop";
+
 /** "WR4" for a spot. */
 export function spotLabel(spot: Spot): string {
   return `${spot.pos}${spot.index + 1}`;

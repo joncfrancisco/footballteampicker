@@ -170,3 +170,49 @@ export function movedNotice(moved: CharId[]): string | undefined {
   if (!moved.length) return undefined;
   return `${moved.length} ${moved.length === 1 ? "player" : "players"} moved to the pool`;
 }
+
+/** Which sides each character plays, for "O"/"D" markers and the "unused" filter. */
+export function usage(team: Team): Map<CharId, Set<Spot["side"]>> {
+  const out = new Map<CharId, Set<Spot["side"]>>();
+  for (const side of SIDES)
+    for (const row of Object.values(team[side].depth))
+      for (const id of row) if (id !== null) out.set(id, (out.get(id) ?? new Set()).add(side));
+  return out;
+}
+
+export function clearSide(team: Team, side: Spot["side"]): Team {
+  const depth = Object.fromEntries(
+    Object.entries(team[side].depth).map(([pos, row]) => [pos, row.map(() => null)]),
+  );
+  return withDepth(team, side, depth);
+}
+
+/**
+ * Fill every empty spot, offense first, from characters who don't play yet, in `order`.
+ * Nobody is put on both sides, so the result is valid whatever the two-way flags say.
+ */
+export function autoFill(team: Team, order: CharId[]): Team {
+  const used = usage(team);
+  const queue = order.filter((id) => !used.has(id));
+  let next = team;
+  for (const side of SIDES) {
+    const depth = Object.fromEntries(
+      Object.entries(next[side].depth).map(([pos, row]) => [
+        pos,
+        row.map((id) => id ?? queue.shift() ?? null),
+      ]),
+    );
+    next = withDepth(next, side, depth);
+  }
+  return next;
+}
+
+/** A fresh random lineup: both sides cleared, then filled from a shuffled `order`. */
+export function randomize(team: Team, order: CharId[], random: () => number = Math.random): Team {
+  const shuffled = [...order];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j]!, shuffled[i]!];
+  }
+  return autoFill(clearSide(clearSide(team, "offense"), "defense"), shuffled);
+}
