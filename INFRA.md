@@ -95,7 +95,7 @@ upload token and ten-minute expiry, and returns a presigned S3 POST. Its policy 
 temporary key and MIME type and caps the object at 1,500,000 bytes. The bucket permits direct
 POSTs only from the production origin and expires `tmp/` after one day.
 
-List saves require a fresh Turnstile token. The API atomically consumes the upload session,
+List saves reuse the verified upload session, avoiding a second human challenge. The API atomically consumes the upload session,
 checks MIME/magic bytes, file size, and header dimensions against the tile grid, and publishes
 the validated bytes under the list's immutable content hash. It never copies a mutable object
 after validation. Saved lists contain neither upload tokens nor raw edit tokens. Failed saves
@@ -138,7 +138,9 @@ Budget `footballteampicker-monthly` has a $5 monthly limit, filtered to `app=foo
 and emails the owner at 50% actual and 100% forecast. Billing must first expose and activate
 the `app` cost-allocation tag; newly created resource tags can take about 24 hours to appear.
 At the 2026-10-31 setup check the tag was not yet available, so activation and email delivery
-verification remain launch tasks. The budget action at $10 and write kill switch are #17.
+verification remain launch tasks. The $10 actual-spend action attaches the bootstrap-owned
+deny-all policy only to `footballteampicker-api`. The execution role can attach/detach only
+that policy on that role. Budget data can lag hours; this is a backstop rather than a timely cap.
 
 Request logs contain a normalized route, HTTP status, and latency in milliseconds. They
 contain no raw URL, request body, IP, authorization header, or Turnstile/edit token. Unexpected
@@ -149,6 +151,47 @@ After confirming the SNS subscription, test each alarm with `aws cloudwatch set-
 to ALARM and then OK, confirm the emails, and inspect alarm action history. These four alarms
 only notify; test-firing them does not pause the API. The kill-switch alarm is a separate test
 and should follow its runbook.
+
+## Write protection and cost exposure
+
+CloudFront subscription `arn:aws:pricingplanmanager::020949219706:subscription:sub_3LSIhlHgrqIv9iqdglt0jjw9WuW`
+was verified `ACTIVE`, tier `FREE`, on 2026-10-31. It includes only distribution
+`E374QW7TXASG40` and its WAF ACL; the shared Route 53 zone remains outside the plan.
+The original ACL with the nested API rate rule was rejected; the fallback all-path rule
+and three managed groups was accepted. Usage notices at 50/80/100% are automatic per the
+[plan documentation](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/flat-rate-pricing-plan.html).
+Verify the account notification recipient separately before launch.
+
+Hourly DynamoDB counters allow 50 list saves/deletes, 50 atlas uploads, 200 team saves,
+and 20 reports per client IP. Keys contain only a salted SHA-256 hash, window, and operation;
+TTL removes them after the following hour. Verification precedes counter writes. Upload
+sessions are single use, expire after ten minutes, and authorize only one list save.
+
+CloudWatch API invocations >50,000/hour or table consumed write units >100,000/hour
+notify SNS, which invokes `footballteampicker-killswitch`. That function accepts only these
+two ALARM messages from the account's own alert topic and sets API reserved concurrency
+to zero. Its separate concurrency reservation is 1. API concurrency normally stays at 25;
+Terraform ignores changes to that setting so a deploy cannot silently lift an active pause.
+The API and switch log groups retain 30 days. Account concurrency was verified at 1,000.
+
+SSM `/footballteampicker/turnstile-secret` is a SecureString containing the runtime reference
+`secretsmanager:turnstile-secret`. Lambda resolves the existing Secrets Manager
+secret without putting its value in Terraform, build output, or logs. The resolver supports
+a plain secret string or a JSON field named secret/key/Turnstile secret key; explicit
+`:SecretString:fieldName` references select other JSON fields. Production rejects test keys.
+
+Cost examples use the AWS Price List API, us-east-1 rates checked 2026-10-31, before free
+tiers: Arm Lambda $0.0000133334/GB-second and $0.20/million requests; DynamoDB writes
+$0.625/million request units. At 256 MB and 250 ms, 50,000 invocations consume 3,125
+GB-seconds: **$0.051667** including request charges. 100,000 write units cost **$0.0625**.
+These are examples at the trigger thresholds, not a guaranteed spend ceiling: large roster
+items consume multiple write units, alarms evaluate hourly and have delivery delay, and
+logs, reads, S3, Secrets Manager, and SNS have separate charges. If all 25 slots run continuously,
+one hour consumes 22,500 GB-seconds: **$0.300002 compute**, before request charges. Repeated
+invalid requests can accumulate invocation charges even without writes. CloudFront and its
+included WAF use the $0 Free plan with no overages; delivery can be slowed at excess usage.
+Presigned uploads cap each object at 1.5 MB and require a verified session; reused presigned
+forms can overwrite only that temporary key during their ten-minute lifetime.
 
 ## Deploys (`.github/workflows/deploy.yml`)
 

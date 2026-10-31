@@ -81,6 +81,14 @@ jobs:
         run: |
           url=$(terraform -chdir=infra output -raw site_url)
           curl -fsS -o /dev/null "$url"
+          # An operator/alarm pause persists across deploys. Confirm the expected rejection.
+          reserved=$(aws lambda get-function-concurrency --function-name footballteampicker-api --query ReservedConcurrentExecutions --output text)
+          if [ "$reserved" = 0 ]; then
+            status=$(curl -sS -o /dev/null -w '%{http_code}' "${url}api/health")
+            [ "$status" = 429 ] || [ "$status" = 503 ]
+            echo 'API write pause remains active; static site is healthy.'
+            exit 0
+          fi
           # Check the body too: a missing /api/* behaviour would fall through to index.html.
           for i in 1 2 3 4 5; do
             body=$(curl -fsS "${url}api/health") && grep -q '"ok":true' <<<"$body" && exit 0

@@ -1,0 +1,26 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AttachOnlyApiDenyPolicy",
+      "Effect": "Allow",
+      "Action": ["iam:AttachRolePolicy", "iam:DetachRolePolicy"],
+      "Resource": "arn:aws:iam::020949219706:role/footballteampicker-api",
+      "Condition": {
+        "ArnEquals": {
+          "iam:PolicyARN": "arn:aws:iam::020949219706:policy/footballteampicker-api-budget-deny"
+        }
+      }
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["iam:GetRole", "iam:ListAttachedRolePolicies"],
+      "Resource": "arn:aws:iam::020949219706:role/footballteampicker-api"
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["iam:GetPolicy", "iam:GetPolicyVersion"],
+      "Resource": "arn:aws:iam::020949219706:policy/footballteampicker-api-budget-deny"
+    }
+  ]
+}

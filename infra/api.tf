@@ -63,6 +63,12 @@ data "aws_iam_policy_document" "api" {
   }
 
   statement {
+    sid       = "ResolveTurnstileReference"
+    actions   = ["secretsmanager:GetSecretValue"]
+    resources = ["arn:aws:secretsmanager:us-east-1:${data.aws_caller_identity.current.account_id}:secret:turnstile-secret-*"]
+  }
+
+  statement {
     sid       = "DecryptSecrets"
     actions   = ["kms:Decrypt"]
     resources = ["*"]
@@ -97,6 +103,11 @@ resource "aws_lambda_function" "api" {
   timeout          = 10
   # Hard cap (#17, #18). The kill switch drops this to 0.
   reserved_concurrent_executions = 25
+
+  lifecycle {
+    # A deploy must not silently undo an operational or automatic write pause.
+    ignore_changes = [reserved_concurrent_executions]
+  }
 
   logging_config {
     log_format = "JSON"

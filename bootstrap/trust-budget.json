@@ -1,0 +1,19 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": { "Service": "budgets.amazonaws.com" },
+      "Action": "sts:AssumeRole",
+      "Condition": {
+        "StringEquals": { "aws:SourceAccount": "020949219706" },
+        "ArnLike": {
+          "aws:SourceArn": [
+            "arn:aws:budgets::020949219706:budget/footballteampicker-monthly",
+            "arn:aws:budgets::020949219706:budget/footballteampicker-monthly/action/*"
+          ]
+        }
+      }
+    }
+  ]
+}

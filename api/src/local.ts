@@ -23,7 +23,7 @@ const api = createApi({
   store,
   media: new Media(store, media),
   publish,
-  human: turnstile({ secret: async () => TEST_SECRET, hostname: "localhost" }),
+  human: turnstile({ secret: async () => TEST_SECRET, hostname: "localhost", allowTestKeys: true }),
   seeds: [CharacterList.parse(lol)],
   ipSalt: "local-development-only",
 });

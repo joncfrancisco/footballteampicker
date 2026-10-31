@@ -42,11 +42,13 @@ export type Deps = {
 };
 
 const MAX_BODY = 64 * 1024;
+const RATE_LIMITS = { lists: 50, uploads: 50, teams: 200, reports: 20 } as const;
 
 class HttpError extends Error {
   constructor(
     public status: number,
     public body: Record<string, unknown>,
+    public headers: Record<string, string> = {},
   ) {
     super(String(body.error));
   }
@@ -103,9 +105,15 @@ export function createApi(deps: Deps) {
       }
       return json(404, { error: "not_found" });
     } catch (e) {
-      if (e instanceof HttpError) return json(e.status, e.body);
+      if (e instanceof HttpError) {
+        const result = json(e.status, e.body);
+        result.headers = { ...result.headers, ...e.headers };
+        return result;
+      }
       if (e instanceof InvalidUpload)
         return json(422, { error: "invalid_upload", message: e.message });
+      if (/AccessDenied|Unauthorized/.test((e as Error).name ?? ""))
+        return json(503, { error: "writes_unavailable" });
       console.error(JSON.stringify({ msg: "unhandled", errorType: (e as Error).name ?? "Error" }));
       return json(500, { error: "internal" });
     }
@@ -114,10 +122,19 @@ export function createApi(deps: Deps) {
   // ---- Routes ----------------------------------------------------------------------------
 
   async function createList(event: Event) {
-    await requireHuman(event);
     const input = parse(ListInput, event);
+    const session = !!input.uploadToken && input.atlas.key.startsWith("tmp/");
+    if (!session) {
+      await requireHuman(event);
+      await enforceRate(event, "lists");
+    }
     const id = newId();
-    const prepared = await prepareList(input, id);
+    const prepared = await prepareList(
+      input,
+      id,
+      undefined,
+      session ? () => enforceRate(event, "lists") : undefined,
+    );
     const editToken = newEditToken();
     const at = now();
     const list: StoredList = {
@@ -134,12 +151,21 @@ export function createApi(deps: Deps) {
   }
 
   async function updateList(event: Event, [, id]: RegExpMatchArray) {
-    await requireHuman(event);
-    const current = await ownedList(event, id!);
     const input = parse(ListInput, event);
+    const session = !!input.uploadToken && input.atlas.key.startsWith("tmp/");
+    if (!session) {
+      await requireHuman(event);
+      await enforceRate(event, "lists");
+    }
+    const current = await ownedList(event, id!);
     if (input.baseVersion !== undefined && input.baseVersion !== current.version)
       throw new HttpError(409, { error: "conflict" });
-    const prepared = await prepareList(input, current.id, current);
+    const prepared = await prepareList(
+      input,
+      current.id,
+      current,
+      session ? () => enforceRate(event, "lists") : undefined,
+    );
     const list: StoredList = {
       ...current,
       ...prepared,
@@ -158,6 +184,7 @@ export function createApi(deps: Deps) {
 
   async function deleteList(event: Event, [, id]: RegExpMatchArray) {
     await requireHuman(event);
+    await enforceRate(event, "lists");
     const current = await ownedList(event, id!);
     await deps.store.deleteList(current.id);
     // Saved teams keep their own snapshot, so their links keep working.
@@ -168,6 +195,7 @@ export function createApi(deps: Deps) {
 
   async function createTeam(event: Event) {
     await requireHuman(event);
+    await enforceRate(event, "teams");
     const input = parse(TeamInput, event) as TeamInput & Team;
     const list = await listFor(input.listId);
     if (input.listVersion !== undefined && input.listVersion !== list.version)
@@ -202,6 +230,7 @@ export function createApi(deps: Deps) {
 
   async function createReport(event: Event) {
     await requireHuman(event);
+    await enforceRate(event, "reports");
     const input = parse(ReportInput, event);
     const exists =
       input.targetType === "list"
@@ -232,12 +261,18 @@ export function createApi(deps: Deps) {
 
   async function createUpload(event: Event) {
     await requireHuman(event);
+    await enforceRate(event, "uploads");
     const { contentType } = parse(UploadInput, event);
     if (!deps.media) throw new HttpError(503, { error: "uploads_unavailable" });
     return json(201, await deps.media.begin(contentType));
   }
 
-  async function prepareList(input: ListInput, id: string, current?: StoredList) {
+  async function prepareList(
+    input: ListInput,
+    id: string,
+    current?: StoredList,
+    onAuthorized?: () => Promise<void>,
+  ) {
     const { uploadToken, baseVersion: _v, ...list } = input;
     const seedId = current?.seedId ?? list.seedId;
     const seed = seedId ? seeds.get(seedId) : undefined;
@@ -259,7 +294,7 @@ export function createApi(deps: Deps) {
       if (!deps.media) throw new HttpError(503, { error: "uploads_unavailable" });
       if (list.atlas.count !== list.characters.length)
         throw new InvalidUpload("One tile is required for every character");
-      list.atlas = await deps.media.finish(id, list.atlas, uploadToken);
+      list.atlas = await deps.media.finish(id, list.atlas, uploadToken, onAuthorized);
     }
     return {
       ...list,
@@ -272,6 +307,26 @@ export function createApi(deps: Deps) {
     const result = await deps.human(header(event, "x-turnstile-token"), clientIp(event));
     if (result === "unavailable") throw new HttpError(503, { error: "writes_unavailable" });
     if (result === "failed") throw new HttpError(403, { error: "human_check_failed" });
+  }
+
+  async function enforceRate(event: Event, kind: keyof typeof RATE_LIMITS) {
+    const salt = deps.reporterSalt ? await deps.reporterSalt() : deps.ipSalt;
+    if (!salt) throw new HttpError(503, { error: "writes_unavailable" });
+    const seconds = Math.floor(new Date(now()).getTime() / 1000);
+    const window = Math.floor(seconds / 3600);
+    const hash = sha256(`${salt}:${clientIp(event)}`);
+    if (
+      !(await deps.store.consumeRate(
+        `RATE#${hash}#${window}#${kind}`,
+        RATE_LIMITS[kind],
+        (window + 2) * 3600,
+      ))
+    )
+      throw new HttpError(
+        429,
+        { error: "rate_limited" },
+        { "retry-after": String((window + 1) * 3600 - seconds) },
+      );
   }
 
   async function ownedList(event: Event, id: string): Promise<StoredList> {

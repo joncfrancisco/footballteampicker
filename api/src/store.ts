@@ -58,6 +58,7 @@ export type UploadSession = {
 };
 
 export interface Store {
+  consumeRate(key: string, limit: number, expiresAt: number): Promise<boolean>;
   putUpload(session: UploadSession): Promise<void>;
   claimUpload(key: string, tokenHash: string, now: number): Promise<boolean>;
   getList(id: string): Promise<StoredList | null>;
@@ -75,6 +76,14 @@ export interface Store {
 }
 
 export class MemoryStore implements Store {
+  rates = new Map<string, number>();
+  async consumeRate(key: string, limit: number, _expiresAt: number) {
+    void _expiresAt; // Window-specific keys never need to be reused by the local in-memory store.
+    const count = this.rates.get(key) ?? 0;
+    if (count >= limit) return false;
+    this.rates.set(key, count + 1);
+    return true;
+  }
   uploads = new Map<string, UploadSession>();
   async putUpload(session: UploadSession) {
     this.uploads.set(session.key, session);
@@ -154,6 +163,25 @@ export class DynamoStore implements Store {
     this.db = DynamoDBDocumentClient.from(client, {
       marshallOptions: { removeUndefinedValues: true },
     });
+  }
+
+  async consumeRate(key: string, limit: number, expiresAt: number) {
+    try {
+      await this.db.send(
+        new UpdateCommand({
+          TableName: this.table,
+          Key: { PK: key, SK: "COUNT" },
+          UpdateExpression: "SET expiresAt = :expires ADD #count :one",
+          ConditionExpression: "attribute_not_exists(#count) OR #count < :limit",
+          ExpressionAttributeNames: { "#count": "count" },
+          ExpressionAttributeValues: { ":expires": expiresAt, ":one": 1, ":limit": limit },
+        }),
+      );
+      return true;
+    } catch (e) {
+      if (e instanceof ConditionalCheckFailedException) return false;
+      throw e;
+    }
   }
 
   async putUpload(session: UploadSession) {

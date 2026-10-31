@@ -50,6 +50,17 @@ role footballteampicker-gha-plan   trust-plan.json   policy-plan.json \
 role footballteampicker-gha-deploy trust-deploy.json policy-deploy.json \
     "footballteampicker CI: apply and deploy from the production environment"
 
+# Budget execution is a bootstrap role outside the CI-created api* namespace. It can attach
+# only this deny-only policy to the API role; it cannot grant permissions or affect other apps.
+BUDGET_DENY_ARN=arn:aws:iam::$ACCOUNT:policy/footballteampicker-api-budget-deny
+if ! aws iam get-policy --policy-arn "$BUDGET_DENY_ARN" >/dev/null 2>&1; then
+    aws iam create-policy --policy-name footballteampicker-api-budget-deny --tags "${TAGS[@]}" \
+        --description "Budget backstop: deny all API role activity" \
+        --policy-document file://budget-deny.json >/dev/null
+fi
+role footballteampicker-budget-action trust-budget.json policy-budget.json \
+    "footballteampicker: budget action may attach only the API deny policy"
+
 # GitHub: the deploy role is only usable from the production environment, which only main
 # can deploy to. The plan role ARN is a repo variable because PR jobs have no environment.
 gh api -X PUT "repos/$REPO/environments/production" --input - >/dev/null <<JSON

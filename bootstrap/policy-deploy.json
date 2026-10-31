@@ -96,6 +96,13 @@
       "Condition": { "StringEquals": { "iam:PassedToService": "lambda.amazonaws.com" } }
     },
     {
+      "Sid": "PassOnlyBudgetActionRole",
+      "Effect": "Allow",
+      "Action": "iam:PassRole",
+      "Resource": "arn:aws:iam::020949219706:role/footballteampicker-budget-action",
+      "Condition": { "StringEquals": { "iam:PassedToService": "budgets.amazonaws.com" } }
+    },
+    {
       "Sid": "ReadBoundary",
       "Effect": "Allow",
       "Action": ["iam:GetPolicy", "iam:GetPolicyVersion"],

@@ -17,3 +17,5 @@ const result = await handler({
 });
 assert.equal(result.statusCode, 200);
 assert.deepEqual(JSON.parse(result.body), { ok: true });
+const { handler: kill } = await import("../dist/kill.mjs");
+assert.deepEqual(await kill({ Records: [] }), { paused: false });

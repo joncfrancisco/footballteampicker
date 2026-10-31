@@ -242,11 +242,11 @@ function Editor({
         input.atlas.key = grant.key;
         input.uploadToken = grant.uploadToken;
       }
-      setStatus("Verify to save your list.");
+      setStatus(input.uploadToken ? "Saving your list…" : "Verify to save your list.");
       const result = await writeJson(
         saved ? `/api/lists/${saved.id}` : "/api/lists",
         input,
-        await human(),
+        input.uploadToken ? "" : await human(),
         saved ? { method: "PUT", editToken: saved.token } : {},
       );
       const edit = result.editToken ?? saved?.token;
