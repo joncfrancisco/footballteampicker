@@ -1,0 +1,86 @@
+#!/usr/bin/env python3
+"""Build the League of Legends seed roster from Riot's Data Dragon.
+
+Writes seed/league-of-legends/list.json and one sprite atlas (atlas-<hash>.webp).
+Deterministic for a given Data Dragon version:
+
+    bin/seed-lol            # latest version
+    bin/seed-lol 16.21.1    # pinned
+
+Used under Riot Games' "Legal Jibber Jabber" policy; the site must show the
+disclaimer stored in list.json.
+"""
+import hashlib
+import io
+import json
+import math
+import sys
+import urllib.request
+from pathlib import Path
+
+from PIL import Image
+
+DDRAGON = "https://ddragon.leagueoflegends.com"
+TILE = 120  # Data Dragon champion squares are 120x120; don't upscale
+COLUMNS = 16
+OUT = Path(__file__).resolve().parent.parent / "seed" / "league-of-legends"
+DISCLAIMER = (
+    'Depth Chart was created under Riot Games\' "Legal Jibber Jabber" policy '
+    "using assets owned by Riot Games. Riot Games does not endorse or sponsor this project."
+)
+
+
+def get(url: str) -> bytes:
+    with urllib.request.urlopen(url, timeout=30) as r:
+        return r.read()
+
+
+def main() -> None:
+    version = sys.argv[1] if len(sys.argv) > 1 else json.loads(get(f"{DDRAGON}/api/versions.json"))[0]
+    champs = json.loads(get(f"{DDRAGON}/cdn/{version}/data/en_US/champion.json"))["data"]
+    ordered = sorted(champs.values(), key=lambda c: c["name"].casefold())
+
+    rows = math.ceil(len(ordered) / COLUMNS)
+    atlas = Image.new("RGB", (COLUMNS * TILE, rows * TILE))
+    characters = []
+    for i, c in enumerate(ordered):
+        img = Image.open(io.BytesIO(get(f"{DDRAGON}/cdn/{version}/img/champion/{c['image']['full']}")))
+        img = img.convert("RGB")
+        if img.size != (TILE, TILE):
+            img = img.resize((TILE, TILE), Image.LANCZOS)
+        atlas.paste(img, ((i % COLUMNS) * TILE, (i // COLUMNS) * TILE))
+        characters.append({
+            "id": c["id"],
+            "name": c["name"],
+            "subtitle": c["title"],
+            "tags": c["tags"],
+            "twoWay": False,
+            "atlasIndex": i,
+        })
+
+    buf = io.BytesIO()
+    atlas.save(buf, "WEBP", quality=82, method=6)
+    data = buf.getvalue()
+    atlas_name = f"atlas-{hashlib.sha256(data).hexdigest()[:10]}.webp"
+
+    OUT.mkdir(parents=True, exist_ok=True)
+    for old in OUT.glob("atlas-*.webp"):
+        old.unlink()
+    (OUT / atlas_name).write_bytes(data)
+    doc = {
+        "id": "demo-lol",
+        "title": "League of Legends Champions",
+        "ip": "League of Legends",
+        "description": f"Every champion in League of Legends as of patch {version}.",
+        "tags": sorted({t for c in characters for t in c["tags"]}),
+        "source": {"provider": "Riot Games Data Dragon", "version": version},
+        "disclaimer": DISCLAIMER,
+        "atlas": {"src": atlas_name, "tile": TILE, "columns": COLUMNS, "count": len(characters)},
+        "characters": characters,
+    }
+    (OUT / "list.json").write_text(json.dumps(doc, indent=2, ensure_ascii=False) + "\n")
+    print(f"{len(characters)} champions, patch {version}, {atlas_name} {len(data) // 1024} KB")
+
+
+if __name__ == "__main__":
+    main()
