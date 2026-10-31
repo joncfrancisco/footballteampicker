@@ -10,6 +10,7 @@ import type { ListInput, Team } from "@ftp/shared";
 
 /** A saved character list (DynamoDB `LIST#<id>` / `META`). */
 export type StoredList = Omit<ListInput, "atlas"> & {
+  disclaimer?: string;
   id: string;
   atlas: ListInput["atlas"];
   editTokenHash: string;
@@ -44,7 +45,16 @@ export type StoredReport = {
 
 export class VersionConflict extends Error {}
 
+export type UploadSession = {
+  key: string;
+  tokenHash: string;
+  contentType: string;
+  expiresAt: number;
+};
+
 export interface Store {
+  putUpload(session: UploadSession): Promise<void>;
+  claimUpload(key: string, tokenHash: string, now: number): Promise<boolean>;
   getList(id: string): Promise<StoredList | null>;
   /** Create (expectVersion undefined: must not exist) or update (must be at expectVersion). */
   putList(list: StoredList, expectVersion?: number): Promise<void>;
@@ -58,6 +68,16 @@ export interface Store {
 }
 
 export class MemoryStore implements Store {
+  uploads = new Map<string, UploadSession>();
+  async putUpload(session: UploadSession) {
+    this.uploads.set(session.key, session);
+  }
+  async claimUpload(key: string, tokenHash: string, now: number) {
+    const session = this.uploads.get(key);
+    if (!session || session.tokenHash !== tokenHash || session.expiresAt <= now) return false;
+    this.uploads.delete(key);
+    return true;
+  }
   lists = new Map<string, StoredList>();
   teams = new Map<string, StoredTeam>();
   reports: StoredReport[] = [];
@@ -102,6 +122,32 @@ export class DynamoStore implements Store {
     this.db = DynamoDBDocumentClient.from(client, {
       marshallOptions: { removeUndefinedValues: true },
     });
+  }
+
+  async putUpload(session: UploadSession) {
+    await this.db.send(
+      new PutCommand({
+        TableName: this.table,
+        Item: { PK: `UPLOAD#${session.key}`, SK: "META", ...session },
+        ConditionExpression: "attribute_not_exists(PK)",
+      }),
+    );
+  }
+  async claimUpload(key: string, tokenHash: string, now: number) {
+    try {
+      await this.db.send(
+        new DeleteCommand({
+          TableName: this.table,
+          Key: { PK: `UPLOAD#${key}`, SK: "META" },
+          ConditionExpression: "tokenHash = :hash AND expiresAt > :now",
+          ExpressionAttributeValues: { ":hash": tokenHash, ":now": now },
+        }),
+      );
+      return true;
+    } catch (e) {
+      if (e instanceof ConditionalCheckFailedException) return false;
+      throw e;
+    }
   }
 
   async getList(id: string) {

@@ -8,6 +8,7 @@ export const PublishedList = CharacterList.and(
     visibility: z.enum(["public", "unlisted"]),
     createdAt: z.string(),
     updatedAt: z.string(),
+    seedId: z.string().optional(),
   }),
 );
 export type PublishedList = z.infer<typeof PublishedList>;

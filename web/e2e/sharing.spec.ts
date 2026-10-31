@@ -96,12 +96,11 @@ test("saved snapshots survive list edits; remix handles removed and former two-w
   const characters = lol.characters.slice(0, 30).map((c) => ({ ...c, twoWay: true }));
   const input = {
     title: "Snapshot roster",
+    seedId: lol.id,
     ip: "Test game",
-    atlas: { key: "m/a/test.webp", ...lol.atlas, count: lol.characters.length },
+    atlas: { ...lol.atlas, key: `m/seeds/${lol.id}/${lol.atlas.src}` },
     characters,
   };
-  // This API caps custom atlas counts at 150; indices in this fixture are in the first 30.
-  input.atlas.count = 30;
   const created = await request.post("/api/lists", { headers: HUMAN, data: input });
   expect(created.ok()).toBeTruthy();
   const { id, editToken } = (await created.json()) as { id: string; editToken: string };

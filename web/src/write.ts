@@ -35,7 +35,18 @@ export async function writeJson(
     },
     body: serialized,
   });
-  const result = (await response.json().catch(() => ({}))) as { id?: string; error?: string };
+  const result = (await response.json().catch(() => ({}))) as {
+    id?: string;
+    error?: string;
+    editToken?: string;
+    version?: number;
+    key?: string;
+    uploadToken?: string;
+    url?: string;
+    fields?: Record<string, string>;
+    atlas?: ListInput["atlas"];
+  };
   if (!response.ok) throw new WriteError(response.status, result.error ?? "unknown");
   return result;
 }
+import type { ListInput } from "@ftp/shared";

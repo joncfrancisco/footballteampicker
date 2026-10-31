@@ -7,7 +7,7 @@ import react from "@vitejs/plugin-react";
 const CSP = [
   "default-src 'self'",
   "img-src 'self' data: blob:",
-  "connect-src 'self'",
+  "connect-src 'self' https://footballteampicker-media-020949219706.s3.us-east-1.amazonaws.com",
   "script-src 'self' https://challenges.cloudflare.com",
   "frame-src https://challenges.cloudflare.com",
 ].join("; ");

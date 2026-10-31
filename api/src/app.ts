@@ -2,6 +2,7 @@ import {
   CharacterList,
   ListInput,
   ReportInput,
+  UploadInput,
   TeamInput,
   teamErrors,
   type Character,
@@ -19,8 +20,10 @@ import {
   type StoredTeam,
 } from "./store";
 import type { Event, Result } from "./types";
+import { InvalidUpload, type Media } from "./media";
 
 export type Deps = {
+  media?: Media;
   store: Store;
   publish: Publisher;
   human: HumanCheck;
@@ -65,8 +68,7 @@ export function createApi(deps: Deps) {
     ["DELETE", /^\/api\/lists\/([A-Za-z0-9]{10})$/, deleteList],
     ["POST", /^\/api\/teams$/, createTeam],
     ["POST", /^\/api\/reports$/, createReport],
-    // #10: presigned atlas uploads.
-    ["POST", /^\/api\/uploads$/, async () => json(501, { error: "not_implemented" })],
+    ["POST", /^\/api\/uploads$/, createUpload],
   ];
 
   async function handle(event: Event): Promise<Result> {
@@ -80,6 +82,8 @@ export function createApi(deps: Deps) {
       return json(404, { error: "not_found" });
     } catch (e) {
       if (e instanceof HttpError) return json(e.status, e.body);
+      if (e instanceof InvalidUpload)
+        return json(422, { error: "invalid_upload", message: e.message });
       console.error(
         JSON.stringify({ msg: "unhandled", error: String(e), stack: (e as Error).stack }),
       );
@@ -93,10 +97,11 @@ export function createApi(deps: Deps) {
     await requireHuman(event);
     const input = parse(ListInput, event);
     const id = newId();
+    const prepared = await prepareList(input, id);
     const editToken = newEditToken();
     const at = now();
     const list: StoredList = {
-      ...input,
+      ...prepared,
       id,
       editTokenHash: sha256(editToken),
       version: 1,
@@ -105,16 +110,19 @@ export function createApi(deps: Deps) {
     };
     await deps.store.putList(list);
     await publishList(list);
-    return json(201, { id, editToken, version: 1 });
+    return json(201, { id, editToken, version: 1, atlas: prepared.atlas });
   }
 
   async function updateList(event: Event, [, id]: RegExpMatchArray) {
     await requireHuman(event);
     const current = await ownedList(event, id!);
     const input = parse(ListInput, event);
+    if (input.baseVersion !== undefined && input.baseVersion !== current.version)
+      throw new HttpError(409, { error: "conflict" });
+    const prepared = await prepareList(input, current.id, current);
     const list: StoredList = {
       ...current,
-      ...input,
+      ...prepared,
       version: current.version + 1,
       updatedAt: now(),
     };
@@ -125,10 +133,11 @@ export function createApi(deps: Deps) {
       throw e;
     }
     await publishList(list);
-    return json(200, { id, version: list.version });
+    return json(200, { id, version: list.version, atlas: prepared.atlas });
   }
 
   async function deleteList(event: Event, [, id]: RegExpMatchArray) {
+    await requireHuman(event);
     const current = await ownedList(event, id!);
     await deps.store.deleteList(current.id);
     // Saved teams keep their own snapshot, so their links keep working.
@@ -183,6 +192,44 @@ export function createApi(deps: Deps) {
   }
 
   // ---- Helpers ---------------------------------------------------------------------------
+
+  async function createUpload(event: Event) {
+    await requireHuman(event);
+    const { contentType } = parse(UploadInput, event);
+    if (!deps.media) throw new HttpError(503, { error: "uploads_unavailable" });
+    return json(201, await deps.media.begin(contentType));
+  }
+
+  async function prepareList(input: ListInput, id: string, current?: StoredList) {
+    const { uploadToken, baseVersion: _v, ...list } = input;
+    const seedId = current?.seedId ?? list.seedId;
+    const seed = seedId ? seeds.get(seedId) : undefined;
+    if (seedId && !seed) throw new HttpError(400, { error: "unknown_seed" });
+    if (
+      list.characters.length > 150 &&
+      (!seed ||
+        list.characters.length > seed.characters.length ||
+        list.characters.some((c) => !seed.characters.some((s) => s.id === c.id)))
+    )
+      throw new HttpError(400, { error: "too_many_characters" });
+    const same = (a: ListInput["atlas"], b: ListInput["atlas"]) =>
+      a.key === b.key && a.tile === b.tile && a.columns === b.columns && a.count === b.count;
+    const seedAtlas = seed && { ...seed.atlas, key: `m/seeds/${seed.id}/${seed.atlas.src}` };
+    if (!(
+      (current && same(list.atlas, current.atlas)) ||
+      (seedAtlas && same(list.atlas, seedAtlas))
+    )) {
+      if (!deps.media) throw new HttpError(503, { error: "uploads_unavailable" });
+      if (list.atlas.count !== list.characters.length)
+        throw new InvalidUpload("One tile is required for every character");
+      list.atlas = await deps.media.finish(id, list.atlas, uploadToken);
+    }
+    return {
+      ...list,
+      ...(seedId ? { seedId } : {}),
+      ...(seed?.disclaimer ? { disclaimer: seed.disclaimer } : {}),
+    };
+  }
 
   async function requireHuman(event: Event) {
     const result = await deps.human(header(event, "x-turnstile-token"), clientIp(event));

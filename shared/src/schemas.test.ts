@@ -63,11 +63,12 @@ describe("ListInput", () => {
   const list = {
     title: "My Roster",
     ip: "Some Game",
-    atlas: { key: "m/a/abc123.webp", tile: 120, columns: 16, count: 2 },
-    characters: [
-      { id: "a", name: "A" },
-      { id: "b", name: "B", twoWay: true, atlasIndex: 1 },
-    ].map((c, i) => ({ atlasIndex: i, ...c })),
+    atlas: { key: "m/a/abc123.webp", tile: 120, columns: 16, count: 11 },
+    characters: Array.from({ length: 11 }, (_, i) => ({
+      id: `c${i}`,
+      name: `C${i}`,
+      atlasIndex: i,
+    })),
   };
 
   it("fills defaults", () => {

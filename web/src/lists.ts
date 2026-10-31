@@ -18,6 +18,8 @@ const atlases = import.meta.glob<string>("../../seed/*/atlas-*.webp", {
 });
 
 export type LoadedList = CharacterList & {
+  seedId?: string;
+  visibility?: "public" | "unlisted";
   version: number;
   atlasUrl: string;
   byId: ReadonlyMap<string, Character>;
