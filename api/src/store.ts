@@ -46,7 +46,16 @@ export type StoredReport = {
   reason: string;
   ipHash: string;
   createdAt: string;
+  /** Set by the moderation commands when the report is resolved (#51). */
+  action?: "takedown" | "dismiss" | "restore";
+  resolvedBy?: string;
+  resolvedAt?: string;
+  note?: string;
 };
+
+/** GSI1 partitions for reports: open ones by `createdAt`, resolved ones by `resolvedAt`. */
+export const OPEN_REPORTS = "REPORT#open";
+export const RESOLVED_REPORTS = "REPORT#resolved";
 
 export class VersionConflict extends Error {}
 
@@ -287,6 +296,9 @@ export class DynamoStore implements Store {
             SK: report.ipHash,
             ...report,
             status: "open",
+            // Open reports share one GSI1 partition so moderators query instead of scanning (#51).
+            GSI1PK: OPEN_REPORTS,
+            GSI1SK: report.createdAt,
           },
           ConditionExpression: "attribute_not_exists(PK) OR #status = :resolved",
           ExpressionAttributeNames: { "#status": "status" },
