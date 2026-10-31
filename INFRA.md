@@ -207,13 +207,13 @@ That is **~1.1M requests and ~90 GB a month**, right at the Free plan allowance 
 delivery may be slowed. One sprite atlas per list is what makes it fit: per-portrait images
 would be ~19M requests a month.
 
-| Piece       | Sizing                                                                                                                                                                                                       |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Reads       | All S3 via CloudFront `/m/*`; viewing, browsing and search never invoke Lambda                                                                                                                               |
-| API Lambda  | Reserved concurrency 25; a write is ~250 ms, so 25 drains a 100-share burst in ~1 s                                                                                                                          |
-| Client      | Retries a 429/503 that never reached the API (Lambda throttle, CloudFront) up to 3 times with jittered backoff; the unused Turnstile token is still valid. API answers and kill-switch pauses aren't retried |
-| DynamoDB    | On-demand. A full team is ~1.1 KB (2 WRU), a 150-character list ~25 WRU                                                                                                                                      |
-| Kill switch | Trips at 50,000 invocations/hour or 100,000 WRU/hour; peak is ~2,000 invocations/hour                                                                                                                        |
+| Piece       | Sizing                                                                                                            |
+| ----------- | ----------------------------------------------------------------------------------------------------------------- |
+| Reads       | All S3 via CloudFront `/m/*`; viewing, browsing and search never invoke Lambda                                    |
+| API Lambda  | Reserved concurrency 25; a write is ~250 ms, so 25 drains a 100-share burst in ~1 s                               |
+| Client      | Share retries a 429/503 up to 3 times with jittered backoff and a fresh Turnstile token (§ Sharing configuration) |
+| DynamoDB    | On-demand. A full team is ~1.1 KB (2 WRU), a 150-character list ~25 WRU                                           |
+| Kill switch | Trips at 50,000 invocations/hour or 100,000 WRU/hour; peak is ~2,000 invocations/hour                             |
 
 **Upgrade trigger:** if the plan's 50/80/100% usage emails show a month staying over the
 allowance, move to **Pro, $15/month flat** (10M requests, 50 TB, still no overage). At 100

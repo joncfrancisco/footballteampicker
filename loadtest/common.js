@@ -25,26 +25,19 @@ export function postTeam(team, tags = {}) {
 }
 
 /**
- * The web client's retry rule (web/src/write.ts): a 429/503 without the API's `error` body
- * never reached the API, so it's retried up to 3 times with jittered backoff.
+ * The web client's retry rule (web/src/ShareMenu.tsx): a 429 or 503 is retried up to 3 times,
+ * 500 ms × 2^attempt plus up to 400 ms of jitter. The browser gets a fresh Turnstile token for
+ * each retry; the load-test token is reusable.
  */
 export function postTeamWithRetry(team, tags) {
   let r = postTeam(team, tags);
   let retries = 0;
-  while (retries < 3 && (r.status === 429 || r.status === 503) && !apiError(r)) {
-    sleep(0.3 * 2 ** retries * (0.5 + Math.random()));
+  while (retries < 3 && (r.status === 429 || r.status === 503)) {
+    sleep((500 * 2 ** retries + Math.random() * 400) / 1000);
     r = postTeam(team, tags);
     retries++;
   }
   return { response: r, retries };
-}
-
-function apiError(r) {
-  try {
-    return !!r.json("error");
-  } catch {
-    return false;
-  }
 }
 
 export function randomTeam() {
