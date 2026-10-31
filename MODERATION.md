@@ -60,3 +60,48 @@ whether restoration will be needed.
 List/team JSON can be rebuilt from DynamoDB. User atlases otherwise have no backup or S3
 version history. Do not delete an old public atlas during a normal list edit: saved teams
 still point at it.
+
+## Moderator role (#50)
+
+`footballteampicker-moderator` can moderate and nothing else: read the queue and the reported
+items, take a list or team down, and dismiss reports (#51). It can't restore, because restore
+reads the private recovery copies under `private/` and the role is explicitly denied them. It
+can't edit content, delete source records, scan the table, read rate-limit or upload items,
+or touch Lambda, IAM, WAF, CloudFront configuration, secrets, budgets or alerts.
+
+The role and its only caller, the IAM user `footballteampicker-moderator-agent`, live in
+`bootstrap/` (admin only), not `infra/`, so CI can never widen them. The user's only permission
+is `sts:AssumeRole` on the role; sessions last at most an hour. The role also carries the
+permissions boundary.
+
+One residual gap: `UpdateItem` may set `hidden`, so a hand-crafted call could clear the flag on
+a list. That alone republishes nothing (the role can't write `m/l/` or `m/t/`), but the owner's
+next edit would. The commands never do this, and `bin/moderation log` shows every resolution.
+
+**Set up or change it** (admin credentials):
+
+```sh
+bootstrap/bootstrap.sh            # creates or updates the user, role and policies
+bootstrap/check-moderator.sh      # IAM policy simulator: what it can and can't do
+```
+
+**Credentials for the daily agent (#52).** Create an access key for the user and put it only in
+the agent's cloud environment, never in the repo, Terraform or chat:
+
+```sh
+aws iam create-access-key --user-name footballteampicker-moderator-agent
+```
+
+The environment then assumes the role through a profile that reads the key from the
+environment:
+
+```ini
+[profile moderator]
+role_arn = arn:aws:iam::020949219706:role/footballteampicker-moderator
+credential_source = Environment
+duration_seconds = 3600
+```
+
+Rotate the key every 90 days: create a second key, update the environment, confirm a run, then
+`aws iam delete-access-key --user-name footballteampicker-moderator-agent --access-key-id <old>`.
+To cut the agent off immediately, `aws iam update-access-key --status Inactive` on its key.
