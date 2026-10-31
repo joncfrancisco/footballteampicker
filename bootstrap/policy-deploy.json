@@ -110,7 +110,11 @@
     {
       "Sid": "NeverDropBoundary",
       "Effect": "Deny",
-      "Action": ["iam:DeleteRolePermissionsBoundary", "iam:CreatePolicyVersion", "iam:DeletePolicy"],
+      "Action": [
+        "iam:DeleteRolePermissionsBoundary",
+        "iam:CreatePolicyVersion",
+        "iam:DeletePolicy"
+      ],
       "Resource": "*"
     },
     {
@@ -180,7 +184,11 @@
     {
       "Sid": "ZoneRead",
       "Effect": "Allow",
-      "Action": ["route53:GetHostedZone", "route53:ListResourceRecordSets", "route53:ListTagsForResource"],
+      "Action": [
+        "route53:GetHostedZone",
+        "route53:ListResourceRecordSets",
+        "route53:ListTagsForResource"
+      ],
       "Resource": "arn:aws:route53:::hostedzone/Z02575211T1QV3GILBPJH"
     },
     {

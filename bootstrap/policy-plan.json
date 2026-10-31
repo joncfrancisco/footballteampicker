@@ -23,7 +23,15 @@
     {
       "Sid": "ReadOwnBucketConfig",
       "Effect": "Allow",
-      "Action": ["s3:GetBucket*", "s3:GetEncryptionConfiguration", "s3:GetLifecycleConfiguration", "s3:GetAccelerateConfiguration", "s3:GetReplicationConfiguration", "s3:GetIntelligentTieringConfiguration", "s3:ListBucket"],
+      "Action": [
+        "s3:GetBucket*",
+        "s3:GetEncryptionConfiguration",
+        "s3:GetLifecycleConfiguration",
+        "s3:GetAccelerateConfiguration",
+        "s3:GetReplicationConfiguration",
+        "s3:GetIntelligentTieringConfiguration",
+        "s3:ListBucket"
+      ],
       "Resource": "arn:aws:s3:::footballteampicker-*"
     },
     {
@@ -69,7 +77,11 @@
     {
       "Sid": "ZoneRead",
       "Effect": "Allow",
-      "Action": ["route53:GetHostedZone", "route53:ListResourceRecordSets", "route53:ListTagsForResource"],
+      "Action": [
+        "route53:GetHostedZone",
+        "route53:ListResourceRecordSets",
+        "route53:ListTagsForResource"
+      ],
       "Resource": "arn:aws:route53:::hostedzone/Z02575211T1QV3GILBPJH"
     },
     {
