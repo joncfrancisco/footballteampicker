@@ -18,7 +18,7 @@ async function main() {
     await lambda.send(
       new PutFunctionConcurrencyCommand({
         FunctionName: "footballteampicker-api",
-        ReservedConcurrentExecutions: action === "on" ? 0 : 25,
+        ReservedConcurrentExecutions: action === "on" ? 0 : 50,
       }),
     );
     await new SNSClient(config).send(
@@ -28,7 +28,7 @@ async function main() {
         Message:
           action === "on"
             ? "An operator paused API writes."
-            : "An operator restored the API reserved-concurrency cap to 25. Review any active budget deny action separately.",
+            : "An operator restored the API reserved-concurrency cap to 50. Review any active budget deny action separately.",
       }),
     );
   }

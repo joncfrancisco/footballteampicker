@@ -40,7 +40,7 @@ export function createKillSwitch(
       new PublishCommand({
         TopicArn: topic,
         Subject: "Depth Chart writes paused",
-        Message: `The ${trigger} alarm paused API writes by setting reserved concurrency to zero. Cached list/team links, browse, and image export remain available. Review traffic and run bin/killswitch off when ready to restore the cap of 25.`,
+        Message: `The ${trigger} alarm paused API writes by setting reserved concurrency to zero. Cached list/team links, browse, and image export remain available. Review traffic and run bin/killswitch off when ready to restore the cap of 50.`,
       }),
     );
     return { paused: true };

@@ -41,7 +41,7 @@ and [IAM reference](https://docs.aws.amazon.com/service-authorization/latest/ref
 ## Pause and resume writes
 
 With operator credentials in account `020949219706`, run `bin/killswitch status`,
-`bin/killswitch on` (pause), or `bin/killswitch off` (restore concurrency 25). Browsing,
+`bin/killswitch on` (pause), or `bin/killswitch off` (restore concurrency 50). Browsing,
 published list/team links and image export read S3 and remain available. Clients receiving
 429/503 retain their drafts and show the sharing-paused message. Deploys preserve a pause.
 
@@ -67,7 +67,7 @@ Normal Terraform apply cannot change these bootstrap roles or the permissions bo
 The #18 load test runs against production, from one machine, so every request shares one IP.
 A window relaxes exactly two things: WAF rate rules switch from Block to Count, and the API
 accepts the `X-Loadtest-Token` header in place of Turnstile and the per-IP app limits. Lambda
-reserved concurrency (25), the kill switch, the budget action and every other WAF rule stay
+reserved concurrency (50), the kill switch, the budget action and every other WAF rule stay
 as they are, because those are what the test measures.
 
 Only a manual deploy (`workflow_dispatch` with `loadtest_mode`) can open a window. Every push
