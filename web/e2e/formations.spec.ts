@@ -68,7 +68,7 @@ for (const size of SIZES) {
 
 test("both sides face each other on a wide screen", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.goto("/");
+  await page.goto("/build/demo-lol");
   const defense = (await page.getByTestId("field-defense").boundingBox())!;
   const offense = (await page.getByTestId("field-offense").boundingBox())!;
   expect(defense.y + defense.height).toBeCloseTo(offense.y, 0);

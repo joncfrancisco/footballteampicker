@@ -223,8 +223,12 @@ export function createApi(deps: Deps) {
   }
 
   async function publishList(list: StoredList) {
-    const { editTokenHash: _h, ...view } = list;
-    await deps.publish.put(`m/l/${list.id}.json`, view, CACHE.list);
+    const { editTokenHash: _h, hidden: _hidden, atlas, ...view } = list;
+    await deps.publish.put(
+      `m/l/${list.id}.json`,
+      { ...view, atlas: publicAtlas(atlas) },
+      CACHE.list,
+    );
     // An update may have made a public list unlisted, so rebuild then too.
     if (list.visibility === "public" || list.version > 1) await rebuildBrowse();
   }
@@ -243,7 +247,10 @@ export function createApi(deps: Deps) {
           description: l.description,
           tags: l.tags,
           count: l.characters.length,
-          atlas: l.atlas,
+          twoWayCount: l.characters.filter((c) => c.twoWay).length,
+          createdAt: l.createdAt,
+          atlas: publicAtlas(l.atlas),
+          cover: l.characters.slice(0, 4).map((c) => c.atlasIndex),
           updatedAt: l.updatedAt,
         })),
       },
@@ -252,6 +259,10 @@ export function createApi(deps: Deps) {
   }
 
   return handle;
+}
+
+function publicAtlas({ key, ...atlas }: StoredList["atlas"]) {
+  return { ...atlas, src: `/${key}` };
 }
 
 function parse<T extends z.ZodType>(schema: T, event: Event): z.infer<T> {

@@ -1,3 +1,4 @@
+import { beforeEach, afterEach } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { App } from "../App";
@@ -107,3 +108,6 @@ describe("Pool", () => {
     );
   });
 });
+
+beforeEach(() => window.history.replaceState(null, "", "/build/demo-lol"));
+afterEach(() => window.history.replaceState(null, "", "/"));

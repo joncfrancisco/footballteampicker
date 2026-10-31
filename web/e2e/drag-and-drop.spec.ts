@@ -20,7 +20,7 @@ test.describe("desktop", () => {
   test.use({ viewport: { width: 1440, height: 1000 } });
 
   test("drag from the pool onto the field, then back to the pool", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/build/demo-lol");
     await drag(page, card(page, "Ahri"), slot(page, "offense", "qb"));
     await expect(slot(page, "offense", "qb")).toHaveAttribute("title", "QB · QB1: Ahri");
     await expect(card(page, "Ahri")).toHaveAccessibleName("Ahri, plays offense");
@@ -30,7 +30,7 @@ test.describe("desktop", () => {
   });
 
   test("a drop onto a filled slot replaces; slot to slot swaps", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/build/demo-lol");
     await drag(page, card(page, "Ahri"), slot(page, "offense", "qb"));
     await drag(page, card(page, "Annie"), slot(page, "offense", "qb"));
     await expect(slot(page, "offense", "qb")).toHaveAttribute("title", "QB · QB1: Annie");
@@ -45,7 +45,7 @@ test.describe("desktop", () => {
   test("a one-way player dropped on the other side snaps back with the reason", async ({
     page,
   }) => {
-    await page.goto("/");
+    await page.goto("/build/demo-lol");
     await drag(page, card(page, "Ahri"), slot(page, "offense", "qb"));
     await drag(page, card(page, "Ahri"), slot(page, "defense", "mlb"));
     await expect(page.getByText("Ahri isn't a two-way player")).toBeVisible();
@@ -56,7 +56,7 @@ test.describe("desktop", () => {
   test("keyboard only: Enter to select, Enter to place; Space and arrows to drag", async ({
     page,
   }) => {
-    await page.goto("/");
+    await page.goto("/build/demo-lol");
     await card(page, "Ahri").focus();
     await page.keyboard.press("Enter");
     await slot(page, "offense", "qb").focus();
@@ -81,7 +81,7 @@ test.describe("desktop", () => {
   });
 
   test("the draft survives a reload", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/build/demo-lol");
     await drag(page, card(page, "Ahri"), slot(page, "offense", "qb"));
     await page.reload();
     await expect(slot(page, "offense", "qb")).toHaveAttribute("title", "QB · QB1: Ahri");
@@ -95,7 +95,7 @@ test.describe("phone (touch)", () => {
   test.use(pixel7);
 
   test("tap a character, tap a slot", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/build/demo-lol");
     await card(page, "Ahri").tap();
     await expect(page.getByText("Ahri selected: tap a spot to place them.")).toBeVisible();
     await slot(page, "offense", "qb").tap();

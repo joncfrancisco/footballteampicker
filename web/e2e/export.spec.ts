@@ -13,7 +13,7 @@ test.use({ viewport: { width: 1440, height: 1000 } });
 
 for (const [layout, want] of Object.entries(EXPECTED)) {
   test(`${layout} export: right size, every portrait drawn`, async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/build/demo-lol");
     // Render in the real browser straight from the app's modules (served by Vite).
     const got = await page.evaluate(async (layout) => {
       const load = (path: string) => import(/* @vite-ignore */ path);

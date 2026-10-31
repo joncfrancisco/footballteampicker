@@ -21,7 +21,7 @@ test.use({ viewport: { width: 1440, height: 1400 } });
 test("enable both sections, fill them, reload: present; disable, reload: absent", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/build/demo-lol");
   await page.getByRole("button", { name: "+ Special teams" }).click();
   await page.getByRole("button", { name: "+ Staff" }).click();
 
