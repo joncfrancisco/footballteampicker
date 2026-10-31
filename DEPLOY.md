@@ -1,5 +1,21 @@
 # Deployment
 
+How to stand up, deploy, operate and recover the stack. What each resource is: [INFRA.md](INFRA.md).
+
+## One-time bootstrap
+
+With admin credentials for account `020949219706`, in this order:
+
+1. `bootstrap/bootstrap.sh`: CI roles, the permissions boundary, the budget execution role and
+   deny policy, the `production` GitHub environment (deployable only from `main`) and the
+   `AWS_ROLE_ARN` / `AWS_PLAN_ROLE_ARN` variables. Idempotent; re-run after editing its JSON.
+2. Secrets, set out of band and never in Terraform state (see § Secrets and keys):
+   `/footballteampicker/turnstile-secret` and `/footballteampicker/ip-salt`.
+3. Merge to `main` (or run the Deploy workflow) to apply `infra/` and publish the site.
+4. Subscribe the distribution to the CloudFront Free plan (§ CloudFront Free plan bootstrap).
+5. Confirm the SNS email subscription for `footballteampicker-alerts`, and activate the `app`
+   cost-allocation tag in Billing once it appears (re-running bootstrap does it).
+
 ## Normal deploy
 
 Open a PR and wait for CI and the read-only Terraform plan. Merge to `main`; the production
@@ -37,6 +53,37 @@ condition keys. Keep those actions with an administrator rather than granting CI
 authority to change other services' pricing plans. Plan changes are an explicit bootstrap
 operation. See the [PricingPlanManager API guide](https://docs.aws.amazon.com/PricingPlanManager/latest/UserGuide/getting-started-pricingplanmanager-api.html)
 and [IAM reference](https://docs.aws.amazon.com/service-authorization/latest/reference/list_pricing-plan-manager.html).
+
+## Rollback
+
+Revert the merge commit on `main` (`git revert -m 1 <sha>`, through a PR) and merge: the
+deploy rebuilds the previous app, re-applies the previous Terraform and redeploys the Lambda.
+Published teams and lists are untouched by app rollbacks. If a release wrote bad data, restore
+DynamoDB to a point in time (INFRA.md § Backups and recovery) rather than reverting further.
+If writes themselves are the problem, `bin/killswitch on` first: reading keeps working.
+
+## Secrets and keys
+
+| What               | Where                                                                                                                            | Effect of changing it                              |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| Turnstile secret   | Secrets Manager `turnstile-secret`, referenced by SSM `/footballteampicker/turnstile-secret` (`secretsmanager:turnstile-secret`) | Must match the site key                            |
+| Turnstile site key | GitHub `production` environment variable `TURNSTILE_SITE_KEY`                                                                    | Baked into the build; needs a deploy               |
+| IP salt            | SSM SecureString `/footballteampicker/ip-salt`                                                                                   | Resets rate-limit windows and report deduplication |
+| Load-test token    | SSM SecureString `/footballteampicker/loadtest-token`                                                                            | Exists only during a load-test window              |
+
+**Turnstile.** Create a widget in Cloudflare (managed mode, hostname
+`depthchart.joncfrancis.co`). Put the secret in the existing Secrets Manager secret
+(`aws secretsmanager put-secret-value --secret-id turnstile-secret --secret-string <secret>`),
+set the site key with `gh variable set TURNSTILE_SITE_KEY --env production --body <key>`, then
+deploy. To rotate, do the same with a new widget or rotated secret. Running Lambda containers
+cache the old secret, so replace them with a configuration update:
+`aws lambda update-function-configuration --function-name footballteampicker-api --description "rotated $(date -u +%FT%TZ)"`
+(the next deploy clears the description again). Production rejects Cloudflare's test keys.
+
+**IP salt.** `aws ssm put-parameter --name /footballteampicker/ip-salt --type SecureString
+--overwrite --value "$(openssl rand -hex 32)"`, then replace running containers as above. Rotate
+only if it leaked: rotation resets hourly rate limits and lets an IP report the same list again
+(auto-hide counts distinct salted reporters).
 
 ## Pause and resume writes
 
@@ -101,9 +148,25 @@ minutes. Your IP is then blocked from the whole site for about five minutes.
 Rehearse any script locally first: `LOADTEST_TOKEN=<32+ characters> npm run dev`, then run it
 with `BASE_URL=http://[::1]:5173` (Vite listens on IPv6 localhost) and the same token.
 
-## Remaining launch runbook
+## Takedowns
 
-Production Turnstile public key configuration, rollback details, rotations, and seed
-regeneration are tracked in #15/#17 and
-will be filled in as those mechanisms are deployed. Public writes remain gated until the
-matching public Turnstile site key is configured and launch checks are complete.
+Reports, auto-hide, `bin/takedown`, `bin/moderation-queue` and restores are in
+[MODERATION.md](MODERATION.md).
+
+## Regenerate the League of Legends seed
+
+Each Riot patch: `bin/seed-lol` (or `bin/seed-lol <version>` to pin), check the diff in
+`seed/league-of-legends/`, open a PR and merge. The deploy uploads the new atlas next to the
+old ones under `m/seeds/demo-lol/` and deletes nothing, so saved teams keep the portraits
+they were built with.
+
+## Launch checklist
+
+Public writes stay gated until all of these are done:
+
+- [ ] Production Turnstile widget: secret and `TURNSTILE_SITE_KEY` set, deployed (#17)
+- [ ] SNS email subscription confirmed; each #14 alarm test-fired to ALARM and back to OK with
+      emails received; kill-switch path tested per § Pause and resume writes (#14, #17)
+- [ ] `app` cost-allocation tag active, so the budget sees the stack's spend (#14)
+- [ ] Load test passed and recorded in INFRA.md (§ Load-test window, #18)
+- [ ] Single-IP flood gets WAF 403s within five minutes (`loadtest/flood.js`, #17)
