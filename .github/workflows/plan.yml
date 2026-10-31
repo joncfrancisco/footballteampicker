@@ -1,11 +1,9 @@
 name: Terraform plan
 
-# PRs plan with the read-only role. The production run (manual, main only) proves the
-# deploy role works; deploy.yml takes over applying.
+# Every PR plans with the read-only role. API code changes show up too: Terraform zips
+# api/dist, so a new build is a new source_code_hash. deploy.yml applies on main.
 on:
   pull_request:
-    paths: ["infra/**", ".github/workflows/plan.yml"]
-  workflow_dispatch:
 
 permissions:
   contents: read
@@ -14,12 +12,17 @@ permissions:
 jobs:
   plan:
     runs-on: ubuntu-latest
-    environment: ${{ github.event_name == 'workflow_dispatch' && 'production' || null }}
     steps:
       - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run build -w api
       - uses: aws-actions/configure-aws-credentials@v5
         with:
-          role-to-assume: ${{ github.event_name == 'workflow_dispatch' && vars.AWS_ROLE_ARN || vars.AWS_PLAN_ROLE_ARN }}
+          role-to-assume: ${{ vars.AWS_PLAN_ROLE_ARN }}
           aws-region: us-east-1
       - uses: hashicorp/setup-terraform@v3
         with:
@@ -27,5 +30,5 @@ jobs:
       - run: terraform -chdir=infra init -input=false
       - name: terraform plan
         run: |
-          terraform -chdir=infra plan -input=false -no-color -out=tfplan | tee plan.txt
-          { echo '```'; cat plan.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          terraform -chdir=infra plan -input=false -no-color -lock=false | tee plan.txt
+          { echo '## terraform plan'; echo '```'; cat plan.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
