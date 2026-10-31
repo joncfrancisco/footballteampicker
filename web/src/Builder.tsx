@@ -21,6 +21,7 @@ import { useEffect, useState } from "react";
 import { DepthChart } from "./depth/DepthChart";
 import { spotLabel } from "./dnd/ids";
 import { Lineup, useLineup } from "./dnd/Lineup";
+import { ExportMenu } from "./export/ExportMenu";
 import { Field } from "./field/Field";
 import { VIEW } from "./field/views";
 import type { LoadedList } from "./lists";
@@ -185,6 +186,8 @@ function BuilderBody(props: Props & { notice: string; setNotice: (s: string) => 
               Clear defense
             </button>
           </div>
+
+          <ExportMenu list={list} team={team} />
 
           <StatusBar notice={notice} />
 
