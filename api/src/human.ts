@@ -1,4 +1,4 @@
-import { GetParameterCommand, SSMClient } from "@aws-sdk/client-ssm";
+import { GetSecretValueCommand, SecretsManagerClient } from "@aws-sdk/client-secrets-manager";
 
 /**
  * Cloudflare Turnstile (#17): every write carries a single-use token, verified server-side
@@ -37,21 +37,43 @@ export function turnstile(opts: {
   };
 }
 
-/** Read a SecureString once per container; a missing parameter means "not configured yet". */
-export function ssmSecret(
-  name: string,
-  ssm = new SSMClient({}),
+/**
+ * Read a Secrets Manager secret once per container; a missing secret means "not configured
+ * yet". The value may be a plain string or a JSON object holding it (under "secret",
+ * "turnstile-secret", or as its only value).
+ */
+export function managedSecret(
+  id: string,
+  client = new SecretsManagerClient({}),
 ): () => Promise<string | undefined> {
   let cached: Promise<string | undefined> | undefined;
   return () => {
-    cached ??= ssm
-      .send(new GetParameterCommand({ Name: name, WithDecryption: true }))
-      .then((r) => r.Parameter?.Value || undefined)
+    cached ??= client
+      .send(new GetSecretValueCommand({ SecretId: id }))
+      .then((r) => secretValue(r.SecretString))
       .catch((e: Error) => {
         cached = undefined; // retry on the next request
-        if (e.name === "ParameterNotFound") return undefined;
+        if (e.name === "ResourceNotFoundException") return undefined;
         throw e;
       });
     return cached;
   };
+}
+
+export function secretValue(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (parsed && typeof parsed === "object") {
+      const o = parsed as Record<string, unknown>;
+      const v =
+        o.secret ??
+        o["turnstile-secret"] ??
+        (Object.keys(o).length === 1 ? Object.values(o)[0] : undefined);
+      return typeof v === "string" && v ? v : undefined;
+    }
+  } catch {
+    // not JSON: the secret itself
+  }
+  return raw.trim() || undefined;
 }

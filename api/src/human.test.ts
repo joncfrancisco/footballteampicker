@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { TEST_SECRET, turnstile } from "./human";
+import { TEST_SECRET, secretValue, turnstile } from "./human";
 
 const reply = (body: unknown, ok = true) =>
   vi.fn(async () => ({ ok, json: async () => body }) as Response);
@@ -57,5 +57,16 @@ describe("turnstile", () => {
         "ip",
       ),
     ).toBe("unavailable");
+  });
+});
+
+describe("secretValue", () => {
+  it("takes a plain string or the secret out of a JSON object", () => {
+    expect(secretValue("abc ")).toBe("abc");
+    expect(secretValue('{"secret":"s1"}')).toBe("s1");
+    expect(secretValue('{"turnstile-secret":"s2"}')).toBe("s2");
+    expect(secretValue('{"anything":"s3"}')).toBe("s3");
+    expect(secretValue('{"a":"x","b":"y"}')).toBeUndefined();
+    expect(secretValue("")).toBeUndefined();
   });
 });

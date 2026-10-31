@@ -49,7 +49,14 @@ data "aws_iam_policy_document" "api" {
     resources = ["${aws_s3_bucket.media.arn}/m/*"]
   }
 
-  # Turnstile secret and IP salt are SecureStrings set out of band, never in Terraform state.
+  # The Turnstile secret lives in Secrets Manager, set out of band, never in Terraform state.
+  statement {
+    sid       = "TurnstileSecret"
+    actions   = ["secretsmanager:GetSecretValue"]
+    resources = ["arn:aws:secretsmanager:us-east-1:${data.aws_caller_identity.current.account_id}:secret:turnstile-secret-*"]
+  }
+
+  # Other secrets (e.g. the IP salt, #17) are SSM SecureStrings, also set out of band.
   statement {
     sid       = "Secrets"
     actions   = ["ssm:GetParameter"]
@@ -99,10 +106,10 @@ resource "aws_lambda_function" "api" {
 
   environment {
     variables = {
-      TABLE                  = aws_dynamodb_table.main.name
-      MEDIA_BUCKET           = aws_s3_bucket.media.bucket
-      TURNSTILE_SECRET_PARAM = "/footballteampicker/turnstile-secret"
-      SITE_HOSTNAME          = var.domain
+      TABLE               = aws_dynamodb_table.main.name
+      MEDIA_BUCKET        = aws_s3_bucket.media.bucket
+      TURNSTILE_SECRET_ID = "turnstile-secret"
+      SITE_HOSTNAME       = var.domain
     }
   }
 

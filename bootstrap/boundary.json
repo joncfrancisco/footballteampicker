@@ -43,6 +43,12 @@
       }
     },
     {
+      "Sid": "TurnstileSecret",
+      "Effect": "Allow",
+      "Action": "secretsmanager:GetSecretValue",
+      "Resource": "arn:aws:secretsmanager:us-east-1:020949219706:secret:turnstile-secret-*"
+    },
+    {
       "Sid": "InvalidateOwnDistribution",
       "Effect": "Allow",
       "Action": "cloudfront:CreateInvalidation",

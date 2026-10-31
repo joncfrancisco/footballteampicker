@@ -56,8 +56,8 @@ Lambda OAC, so calling the URL directly returns 403. Role `footballteampicker-ap
 
 Writes only: `POST /api/lists`, `PUT`/`DELETE /api/lists/:id` (edit token), `POST /api/teams`,
 `POST /api/reports`. Each write checks a Cloudflare Turnstile token first; the secret is the
-SecureString `/footballteampicker/turnstile-secret`, set out of band and read at runtime. Until
-it exists, writes answer 503 `writes_unavailable` (fail closed).
+Secrets Manager secret `turnstile-secret` (us-east-1, plain string or JSON), set out of band
+and read at runtime. If it's missing, writes answer 503 `writes_unavailable` (fail closed).
 
 ## Data (`infra/data.tf`)
 
