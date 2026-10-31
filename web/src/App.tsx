@@ -1,18 +1,21 @@
 import { newTeam, type Team } from "@ftp/shared";
 import { useEffect, useState } from "react";
 import { Builder } from "./Builder";
-import { fillDemo } from "./demo";
+import { demoTeam } from "./demo";
 import { loadDraft, saveDraft } from "./draft";
 import { SEED_LISTS } from "./lists";
 
 const list = SEED_LISTS[0]!;
-// ?fill=demo is for screenshots and checks; it never touches the saved draft.
-const isDemo = () => new URLSearchParams(window.location.search).get("fill") === "demo";
+// ?fill=demo (&sections=1) is for screenshots and checks; it never touches the saved draft.
+const params = () => new URLSearchParams(window.location.search);
+const isDemo = () => params().get("fill") === "demo";
 
 export function App() {
   const [demo] = useState(isDemo);
   const [team, setTeam] = useState<Team>(() =>
-    demo ? fillDemo(newTeam(list), list) : (loadDraft(list) ?? newTeam(list)),
+    demo
+      ? demoTeam(list, { sections: params().get("sections") === "1" })
+      : (loadDraft(list) ?? newTeam(list)),
   );
 
   useEffect(() => {
