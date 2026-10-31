@@ -2,11 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   autoFill,
   clearSide,
+  filledCount,
   move,
   movedNotice,
   place,
   randomize,
   remove,
+  setSection,
   shapeErrors,
   spotsOf,
   switchFront,
@@ -173,8 +175,8 @@ describe("violations and shape", () => {
     t.defense.depth.MLB = ["ahri", null];
     t.offense.depth.RB = ["ghost", null, null];
     expect(violations(t, roster)).toEqual([
-      "Ahri already has a spot on offense",
       'Unknown character "ghost"',
+      "Ahri already has a spot on offense",
       "Ahri isn't a two-way player",
     ]);
   });
@@ -225,5 +227,115 @@ describe("pool helpers", () => {
       .filter((id) => id !== null);
     expect(placed).toHaveLength(52);
     expect(new Set(placed).size).toBe(52);
+  });
+});
+
+describe("special teams and staff (#22)", () => {
+  const ST = (pos: string, n: number): Spot => ({ side: "specialTeams", pos, index: n - 1 });
+  const STAFF = (role: string): Spot => ({ side: "staff", pos: role, index: 0 });
+  const withSections = (...placements: [string, Spot][]) =>
+    placements.reduce(
+      (t, [id, s]) => ok(place(t, roster, id, s)),
+      setSection(setSection(newTeam({ id: "l", ip: "X" }), "specialTeams", true), "staff", true),
+    );
+
+  it("starts off and turns on empty, off removes the section entirely", () => {
+    const t = newTeam({ id: "l", ip: "X" });
+    expect(t).not.toHaveProperty("specialTeams");
+    const on = setSection(setSection(t, "specialTeams", true), "staff", true);
+    expect(on.specialTeams).toEqual({
+      K: [null],
+      P: [null],
+      LS: [null],
+      H: [null],
+      KR: [null, null],
+      PR: [null, null],
+    });
+    expect(on.staff).toEqual({ HC: null, OC: null, DC: null, STC: null, GM: null });
+    expect(shapeErrors(on)).toEqual([]);
+    expect(setSection(on, "staff", false)).not.toHaveProperty("staff");
+  });
+
+  it("lets anyone play special teams on top of an offense or defense spot", () => {
+    const t = withSections(
+      ["ahri", O("WR", 1)],
+      ["ahri", ST("KR", 1)],
+      ["jinx", D("LCB", 1)],
+      ["jinx", ST("PR", 1)],
+    );
+    expect(spotsOf(t, "ahri")).toEqual([O("WR", 1), ST("KR", 1)]);
+    expect(violations(t, roster)).toEqual([]);
+  });
+
+  it("allows KR + PR together", () => {
+    const t = withSections(["ahri", ST("KR", 1)], ["ahri", ST("PR", 2)]);
+    expect(spotsOf(t, "ahri")).toEqual([ST("KR", 1), ST("PR", 2)]);
+    expect(violations(t, roster)).toEqual([]);
+  });
+
+  it("treats K then P as a move, and flags K + P together", () => {
+    const t = ok(place(withSections(["ahri", ST("K", 1)]), roster, "ahri", ST("P", 1)));
+    expect(spotsOf(t, "ahri")).toEqual([ST("P", 1)]);
+
+    const bad = withSections();
+    bad.specialTeams!.K = ["ahri"];
+    bad.specialTeams!.P = ["ahri"];
+    expect(violations(bad, roster)).toEqual(["Ahri already has a special teams spot"]);
+  });
+
+  it("dragging a player onto special teams keeps their offense spot", () => {
+    const t = ok(move(withSections(["ahri", O("WR", 1)]), roster, O("WR", 1), ST("KR", 1)));
+    expect(spotsOf(t, "ahri")).toEqual([O("WR", 1), ST("KR", 1)]);
+  });
+
+  it("a player named to staff leaves the roster, with a notice", () => {
+    const t = withSections(["ahri", O("QB", 1)], ["ahri", ST("H", 1)]);
+    const r = place(t, roster, "ahri", STAFF("HC"));
+    expect(r.ok && r.notice).toBe("Ahri moved to staff and off the roster");
+    expect(spotsOf(ok(r), "ahri")).toEqual([STAFF("HC")]);
+  });
+
+  it("staff can't play, and hold one role each", () => {
+    const t = withSections(["ahri", STAFF("HC")]);
+    expect(place(t, roster, "ahri", O("QB", 1))).toEqual({
+      ok: false,
+      reason: "Ahri is on staff and can't play",
+    });
+    expect(move(t, roster, STAFF("HC"), ST("K", 1)).ok).toBe(false);
+
+    const moved = ok(place(t, roster, "ahri", STAFF("GM")));
+    expect(spotsOf(moved, "ahri")).toEqual([STAFF("GM")]);
+
+    const bad = withSections();
+    bad.staff!.HC = "ahri";
+    bad.staff!.OC = "ahri";
+    bad.offense.depth.QB![0] = "jinx";
+    bad.staff!.DC = "jinx";
+    expect(violations(bad, roster)).toEqual([
+      "Jinx is on staff and can't play",
+      "Ahri already has a staff role",
+    ]);
+  });
+
+  it("swaps staff roles", () => {
+    const t = withSections(["ahri", STAFF("HC")], ["jinx", STAFF("OC")]);
+    const next = ok(move(t, roster, STAFF("HC"), STAFF("OC")));
+    expect(next.staff).toMatchObject({ HC: "jinx", OC: "ahri" });
+  });
+
+  it("auto-fill leaves staff off the field", () => {
+    const t = autoFill(
+      withSections(["ahri", STAFF("HC")], ["jinx", ST("K", 1)]),
+      Object.keys(chars),
+    );
+    expect(spotsOf(t, "ahri")).toEqual([STAFF("HC")]);
+    expect(violations(t, roster)).toEqual([]);
+    expect(filledCount(t, "staff")).toBe(1);
+  });
+
+  it("flags bad section shapes", () => {
+    const t = withSections();
+    t.specialTeams!.KR = [null];
+    expect(shapeErrors(t)).toEqual(["special teams KR must have 2 spots"]);
   });
 });

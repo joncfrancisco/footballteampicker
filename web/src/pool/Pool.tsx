@@ -11,11 +11,13 @@ import { Sprite } from "../Sprite";
  * Dropping a placed character back here takes them off the team.
  */
 export function Pool() {
-  const { list, sides, selected, selectPool } = useLineup();
+  const { list, team, sides, selected, selectPool } = useLineup();
   const [query, setQuery] = useState("");
   const [tags, setTags] = useState<ReadonlySet<string>>(new Set());
   const [twoWayOnly, setTwoWayOnly] = useState(false);
   const [unusedOnly, setUnusedOnly] = useState(false);
+  const [stOnly, setStOnly] = useState(false);
+  const stFilter = stOnly && team.specialTeams !== undefined;
   const drop = useDroppable({ id: POOL_DROP });
 
   const shown = useMemo(() => {
@@ -25,9 +27,11 @@ export function Pool() {
         (!q || c.name.toLocaleLowerCase().includes(q)) &&
         (tags.size === 0 || c.tags.some((t) => tags.has(t))) &&
         (!twoWayOnly || c.twoWay) &&
-        (!unusedOnly || !sides.has(c.id)),
+        (!unusedOnly || !sides.has(c.id)) &&
+        // Available for special teams: not on special teams already, and not on staff.
+        (!stFilter || !(sides.get(c.id)?.has("specialTeams") || sides.get(c.id)?.has("staff"))),
     );
-  }, [list, query, tags, twoWayOnly, unusedOnly, sides]);
+  }, [list, query, tags, twoWayOnly, unusedOnly, stFilter, sides]);
 
   const toggleTag = (tag: string) =>
     setTags((current) => {
@@ -79,6 +83,12 @@ export function Pool() {
           />{" "}
           Unused
         </label>
+        {team.specialTeams && (
+          <label>
+            <input type="checkbox" checked={stOnly} onChange={(e) => setStOnly(e.target.checked)} />{" "}
+            Available for special teams
+          </label>
+        )}
       </div>
       <p className="pool-count">
         {shown.length === list.characters.length
@@ -102,10 +112,21 @@ export function Pool() {
   );
 }
 
-/** "O", "D", "OD" or "" for where a character already plays. */
+/** Short markers for where a character is on the team: "O", "D", "ST", "Staff". */
 function plays(s: Set<string> | undefined): string {
-  return s ? `${s.has("offense") ? "O" : ""}${s.has("defense") ? "D" : ""}` : "";
+  if (!s) return "";
+  if (s.has("staff")) return "Staff";
+  return [s.has("offense") && "O", s.has("defense") && "D", s.has("specialTeams") && "ST"]
+    .filter(Boolean)
+    .join(" ");
 }
+
+const WHERE: Record<string, string> = {
+  O: "offense",
+  D: "defense",
+  ST: "special teams",
+  Staff: "staff",
+};
 
 const PoolCard = memo(function PoolCard(props: {
   list: LoadedList;
@@ -116,7 +137,10 @@ const PoolCard = memo(function PoolCard(props: {
 }) {
   const { list, character: c, plays, selected, onSelect } = props;
   const drag = useDraggable({ id: poolId(c.id) });
-  const where = plays === "OD" ? "offense and defense" : plays === "O" ? "offense" : "defense";
+  const where = plays
+    .split(" ")
+    .map((m) => WHERE[m])
+    .join(" and ");
   return (
     <button
       ref={drag.setNodeRef}
@@ -125,7 +149,7 @@ const PoolCard = memo(function PoolCard(props: {
       {...drag.listeners}
       className={`pool-card${selected ? " selected" : ""}${drag.isDragging ? " dragging" : ""}`}
       aria-pressed={selected}
-      aria-label={`${c.name}${c.twoWay ? ", two-way" : ""}${plays ? `, plays ${where}` : ""}`}
+      aria-label={`${c.name}${c.twoWay ? ", two-way" : ""}${plays ? `, ${plays === "Staff" ? "on" : "plays"} ${where}` : ""}`}
       title={c.subtitle ? `${c.name}, ${c.subtitle}` : c.name}
       data-character={c.id}
       onClick={() => onSelect(c.id)}

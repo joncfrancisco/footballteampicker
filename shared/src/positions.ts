@@ -64,3 +64,15 @@ export function rowsFor(side: "defense", front: Front): Readonly<Record<string, 
 export function rowsFor(side: Side, front: Front = "4-3"): Readonly<Record<string, number>> {
   return side === "offense" ? OFFENSE_ROWS : DEFENSE_ROWS[front];
 }
+
+/** Optional sections (#22). Special teams play on top of offense/defense; staff don't play. */
+export const SPECIAL_TEAMS_ROWS = { K: 1, P: 1, LS: 1, H: 1, KR: 2, PR: 2 } as const;
+export const STAFF_ROLES = ["HC", "OC", "DC", "STC", "GM"] as const;
+export type StaffRole = (typeof STAFF_ROLES)[number];
+export const STAFF_TITLES: Record<StaffRole, string> = {
+  HC: "Head coach",
+  OC: "Offensive coordinator",
+  DC: "Defensive coordinator",
+  STC: "Special teams coordinator",
+  GM: "General manager",
+};

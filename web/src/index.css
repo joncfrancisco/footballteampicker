@@ -123,7 +123,7 @@ button {
   color: inherit;
 }
 
-button[aria-pressed="true"]:not(.slot, .depth-cell),
+button[aria-pressed="true"]:not(.slot, .depth-cell, .section-tile),
 .tabs button[aria-selected="true"] {
   border-color: var(--accent);
   color: var(--accent);
@@ -623,5 +623,103 @@ button[aria-pressed="true"]:not(.slot, .depth-cell),
   .depth-cell.filled {
     justify-content: center;
     padding: 0;
+  }
+}
+
+/* ---- Optional sections (#22) ---- */
+
+.section-toggles {
+  display: flex;
+  gap: 8px;
+}
+
+.section-strip {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.section-strip h2 {
+  margin: 0 0 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.section-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 6px;
+}
+
+.section-tile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 4px 8px 4px 4px;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.section-tile.filled {
+  border-style: solid;
+}
+
+.section-tile.over,
+.section-tile.target {
+  border-color: var(--accent);
+}
+
+.section-tile.selected,
+.section-tile:focus-visible {
+  outline: 3px solid #ffd33d;
+}
+
+.section-tile.dragging {
+  opacity: 0.4;
+}
+
+.section-empty {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 4px;
+  background: var(--bg);
+}
+
+.section-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.section-name {
+  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.section-tile:not(.filled) .section-name {
+  color: var(--muted);
+}
+
+.section-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+@media (min-width: 1100px) {
+  .depth-side.wide {
+    grid-column: 1 / -1;
   }
 }
