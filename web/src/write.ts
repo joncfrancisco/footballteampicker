@@ -25,41 +25,17 @@ export async function writeJson(
   const serialized = JSON.stringify(body);
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(serialized));
   const hash = Array.from(new Uint8Array(digest), (n) => n.toString(16).padStart(2, "0")).join("");
-  const send = () =>
-    fetch(path, {
-      method: options.method ?? "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-turnstile-token": token,
-        "x-amz-content-sha256": hash,
-        ...(options.editToken ? { authorization: `Bearer ${options.editToken}` } : {}),
-      },
-      body: serialized,
-    });
-  let response = await send();
-  let result = await readBody(response);
-  // A 429/503 without our `error` body came from Lambda's concurrency cap or CloudFront, so
-  // the API never ran and the Turnstile token is unused: retry it (#18). An API answer, or a
-  // write paused by the kill switch, is final.
-  for (let attempt = 0; attempt < RETRIES && unreached(response, result); attempt++) {
-    await sleep(RETRY_BASE_MS * 2 ** attempt * (0.5 + Math.random()));
-    response = await send();
-    result = await readBody(response);
-  }
-  if (!response.ok) throw new WriteError(response.status, result.error ?? "unknown");
-  return result;
-}
-
-const RETRIES = 3;
-const RETRY_BASE_MS = 300;
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-function unreached(response: Response, result: { error?: string }) {
-  return (response.status === 429 || response.status === 503) && !result.error;
-}
-
-async function readBody(response: Response) {
-  return (await response.json().catch(() => ({}))) as {
+  const response = await fetch(path, {
+    method: options.method ?? "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-turnstile-token": token,
+      "x-amz-content-sha256": hash,
+      ...(options.editToken ? { authorization: `Bearer ${options.editToken}` } : {}),
+    },
+    body: serialized,
+  });
+  const result = (await response.json().catch(() => ({}))) as {
     id?: string;
     error?: string;
     editToken?: string;
@@ -70,5 +46,7 @@ async function readBody(response: Response) {
     fields?: Record<string, string>;
     atlas?: ListInput["atlas"];
   };
+  if (!response.ok) throw new WriteError(response.status, result.error ?? "unknown");
+  return result;
 }
 import type { ListInput } from "@ftp/shared";
