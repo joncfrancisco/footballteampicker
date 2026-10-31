@@ -1,0 +1,22 @@
+variable "domain" {
+  description = "Public hostname of the site."
+  type        = string
+  default     = "depthchart.joncfrancis.co"
+}
+
+variable "zone_name" {
+  description = "Route 53 zone the hostname lives in. Read as data; this stack never owns it."
+  type        = string
+  default     = "joncfrancis.co"
+}
+
+variable "waf_rate_action" {
+  description = "Action for the WAF rate-based rules: block in production, count during load tests (#18)."
+  type        = string
+  default     = "block"
+
+  validation {
+    condition     = contains(["block", "count"], var.waf_rate_action)
+    error_message = "waf_rate_action must be \"block\" or \"count\"."
+  }
+}
