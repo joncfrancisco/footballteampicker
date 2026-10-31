@@ -225,7 +225,7 @@ would be ~19M requests a month.
 | Piece       | Sizing                                                                                                            |
 | ----------- | ----------------------------------------------------------------------------------------------------------------- |
 | Reads       | All S3 via CloudFront `/m/*`; viewing, browsing and search never invoke Lambda                                    |
-| API Lambda  | Reserved concurrency 25; a write is ~250 ms, so 25 drains a 100-share burst in ~1 s                               |
+| API Lambda  | Reserved concurrency 25. A 100-share burst takes ~5 s with up to 3 retries (see Results)                          |
 | Client      | Share retries a 429/503 up to 3 times with jittered backoff and a fresh Turnstile token (§ Sharing configuration) |
 | DynamoDB    | On-demand. A full team is ~1.1 KB (2 WRU), a 150-character list ~25 WRU                                           |
 | Kill switch | Trips at 50,000 invocations/hour or 100,000 WRU/hour; peak is ~2,000 invocations/hour                             |
@@ -239,24 +239,24 @@ share 1 in 3 → open a team link → browse) and `loadtest/burst.js` (100 full 
 teams and staff in one second), run in a load-test window (DEPLOY.md). Both post the teams in
 `loadtest/teams.json`, which `api/src/loadtest.test.ts` keeps valid against the shared rules.
 
-**Results (production, 2026-10-31, server side from CloudWatch):**
+**Results (production, 2026-10-31):** both scripts passed every threshold.
 
-| Run   | Requests             | Writes stored  | 5xx | Lambda p95 (per minute) | Throttles | Peak concurrency |
-| ----- | -------------------- | -------------- | --- | ----------------------- | --------- | ---------------- |
-| flow  | ~5,300 over 10.5 min | ~310 (~30/min) | 0   | 102–252 ms              | 0         | 2                |
-| burst | 279 in one minute    | 100 of 100     | 0   | 1,220 ms                | 178       | 25 (the cap)     |
+| Run   | Requests            | Shares stored | 5xx | Checks | API p95 (client) | Static p95 TTFB | Throttles | Peak concurrency |
+| ----- | ------------------- | ------------- | --- | ------ | ---------------- | --------------- | --------- | ---------------- |
+| flow  | 5,270 over 10.5 min | 312           | 0   | 100%   | 201 ms           | 80 ms           | 0         | 2                |
+| burst | 279 in 4.6 s        | 100 of 100    | 0   | 100%   | 2.15 s           | n/a             | 178       | 25 (the cap)     |
 
-- The flow's ~37% CloudFront 4xx rate is expected: the browse index 404s until the first public
-  list is saved, and each iteration fetches it twice.
-- The burst does not drain in ~1 s as the sizing table assumes. 178 attempts were throttled and
-  returned to the client as 429 (4xx, not 5xx), and the share retry absorbed every one: all 100
-  teams were stored (400 WRU at 4 WRU each).
+- The flow's 35% `http_req_failed` is expected: the browse index 404s until the first public
+  list is saved, and each iteration fetches it twice. The checks accept that 404.
+- **The burst is at the edge of the retry budget.** It does not drain in ~1 s as the sizing table
+  assumes: 178 attempts were throttled and returned as 429 (4xx, not 5xx). The share retry
+  absorbed every one, but retries averaged 1.78 and reached the maximum of 3, so a bigger burst
+  would start failing shares. The slowest share took 4.6 s.
 - The throttles alarm stayed OK as designed (it needs throttling in three five-minute periods),
   as did the other alarms. The kill switch did not trip and reserved concurrency stayed at 25.
 - Published load-test teams stay in `m/t/` (unlisted, reachable only by id).
 
-Still to record from the k6 summaries: checks rate, API p95 as the client saw it, static p95
-TTFB and burst retry max. Also record Free plan usage before and after.
+Still to record: Free plan usage before and after.
 
 ## Backups and recovery
 
