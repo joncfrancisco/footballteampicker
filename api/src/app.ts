@@ -11,7 +11,7 @@ import {
 import type { z } from "zod";
 import type { HumanCheck } from "./human";
 import { newEditToken, newId, sha256, tokenMatches } from "./ids";
-import { CACHE, type Publisher } from "./publish";
+import { CACHE, browseIndex, listView, type Publisher } from "./publish";
 import {
   VersionConflict,
   type CharacterSnapshot,
@@ -32,6 +32,12 @@ export type Deps = {
   now?: () => Date;
   /** Salt for hashing reporter IPs. */
   ipSalt?: string;
+  reporterSalt?: () => Promise<string | undefined>;
+  notifyReport?: (report: {
+    targetType: "list" | "team";
+    targetId: string;
+    reason: string;
+  }) => Promise<void>;
 };
 
 const MAX_BODY = 64 * 1024;
@@ -183,11 +189,28 @@ export function createApi(deps: Deps) {
   async function createReport(event: Event) {
     await requireHuman(event);
     const input = parse(ReportInput, event);
-    await deps.store.putReport({
+    const exists =
+      input.targetType === "list"
+        ? seeds.has(input.targetId) || (await deps.store.getList(input.targetId))
+        : await deps.store.getTeam(input.targetId);
+    if (!exists) throw new HttpError(404, { error: "not_found" });
+    const salt = deps.reporterSalt ? await deps.reporterSalt() : deps.ipSalt;
+    if (!salt) throw new HttpError(503, { error: "reports_unavailable" });
+    const fresh = await deps.store.putReport({
       ...input,
-      ipHash: sha256(`${deps.ipSalt ?? ""}${clientIp(event)}`),
+      ipHash: sha256(`${salt}:${clientIp(event)}`),
       createdAt: now(),
     });
+    if (
+      input.targetType === "list" &&
+      !seeds.has(input.targetId) &&
+      (await deps.store.reportCount("list", input.targetId)) >= 3
+    ) {
+      await deps.store.hideList(input.targetId);
+      await deps.publish.delete(`m/l/${input.targetId}.json`);
+      await rebuildBrowse(input.targetId);
+    }
+    if (fresh) await deps.notifyReport?.(input);
     return json(204);
   }
 
@@ -270,46 +293,27 @@ export function createApi(deps: Deps) {
   }
 
   async function publishList(list: StoredList) {
-    const { editTokenHash: _h, hidden: _hidden, atlas, ...view } = list;
-    await deps.publish.put(
-      `m/l/${list.id}.json`,
-      { ...view, atlas: publicAtlas(atlas) },
-      CACHE.list,
-    );
+    await deps.publish.put(`m/l/${list.id}.json`, listView(list), CACHE.list);
     // An update may have made a public list unlisted, so rebuild then too.
-    if (list.visibility === "public" || list.version > 1) await rebuildBrowse();
+    if (list.visibility === "public" || list.version > 1) await rebuildBrowse(undefined, list);
   }
 
   /** Rebuild /m/browse/index.json from every public list. */
-  async function rebuildBrowse() {
-    const lists = await deps.store.publicLists();
+  async function rebuildBrowse(excludeId?: string, updated?: StoredList) {
+    const lists = (await deps.store.publicLists()).filter((l) => l.id !== updated?.id);
+    if (updated?.visibility === "public" && !updated.hidden) lists.push(updated);
+    lists.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     await deps.publish.put(
       "m/browse/index.json",
-      {
-        updatedAt: now(),
-        lists: lists.map((l) => ({
-          id: l.id,
-          title: l.title,
-          ip: l.ip,
-          description: l.description,
-          tags: l.tags,
-          count: l.characters.length,
-          twoWayCount: l.characters.filter((c) => c.twoWay).length,
-          createdAt: l.createdAt,
-          atlas: publicAtlas(l.atlas),
-          cover: l.characters.slice(0, 4).map((c) => c.atlasIndex),
-          updatedAt: l.updatedAt,
-        })),
-      },
+      browseIndex(
+        lists.filter((l) => l.id !== excludeId),
+        now(),
+      ),
       CACHE.browse,
     );
   }
 
   return handle;
-}
-
-function publicAtlas({ key, ...atlas }: StoredList["atlas"]) {
-  return { ...atlas, src: `/${key}` };
 }
 
 function parse<T extends z.ZodType>(schema: T, event: Event): z.infer<T> {

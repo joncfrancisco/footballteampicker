@@ -2,6 +2,7 @@ import { ConditionalCheckFailedException, DynamoDBClient } from "@aws-sdk/client
 import {
   DynamoDBDocumentClient,
   DeleteCommand,
+  BatchGetCommand,
   GetCommand,
   PutCommand,
   QueryCommand,
@@ -42,8 +43,8 @@ describe("DynamoStore (single-table keys)", () => {
     });
     expect(update!.Item).not.toHaveProperty("GSI1PK");
     expect(update).toMatchObject({
-      ConditionExpression: "version = :v",
-      ExpressionAttributeValues: { ":v": 1 },
+      ConditionExpression: "version = :v AND (attribute_not_exists(hidden) OR hidden = :no)",
+      ExpressionAttributeValues: { ":v": 1, ":no": false },
     });
   });
 
@@ -80,10 +81,39 @@ describe("DynamoStore (single-table keys)", () => {
         LastEvaluatedKey: { k: 1 },
       })
       .resolvesOnce({ Items: [{ PK: "LIST#2", SK: "META", ...list, id: "2" }] });
+    ddb.on(BatchGetCommand).resolves({
+      Responses: {
+        t: [
+          { ...list, id: "1" },
+          { ...list, id: "2" },
+        ],
+      },
+    });
     expect((await store.publicLists()).map((l) => l.id)).toEqual(["1", "2"]);
     expect(ddb.commandCalls(QueryCommand)[0]!.args[0].input).toMatchObject({
       IndexName: "GSI1",
       ScanIndexForward: false,
     });
+  });
+
+  it("filters stale hidden GSI entries using consistent base-table reads", async () => {
+    ddb.on(QueryCommand).resolves({
+      Items: [
+        { ...list, id: "visible" },
+        { ...list, id: "hidden" },
+      ],
+    });
+    ddb.on(BatchGetCommand).resolves({
+      Responses: {
+        t: [
+          { ...list, id: "visible" },
+          { ...list, id: "hidden", hidden: true },
+        ],
+      },
+    });
+    expect((await store.publicLists()).map((l) => l.id)).toEqual(["visible"]);
+    expect(
+      ddb.commandCalls(BatchGetCommand)[0]!.args[0].input.RequestItems?.t?.ConsistentRead,
+    ).toBe(true);
   });
 });

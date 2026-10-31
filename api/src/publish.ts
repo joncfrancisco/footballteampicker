@@ -1,4 +1,39 @@
 import { DeleteObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import type { StoredList } from "./store";
+
+export function listView(list: StoredList) {
+  const {
+    editTokenHash: _h,
+    hidden: _hidden,
+    uploadToken: _u,
+    baseVersion: _v,
+    atlas,
+    ...view
+  } = list;
+  const { key, ...tiles } = atlas;
+  return { ...view, atlas: { ...tiles, src: `/${key}` } };
+}
+export function browseIndex(lists: StoredList[], updatedAt: string) {
+  return {
+    updatedAt,
+    lists: lists
+      .filter((l) => l.visibility === "public" && !l.hidden)
+      .map((l) => ({
+        id: l.id,
+        title: l.title,
+        ip: l.ip,
+        description: l.description,
+        tags: l.tags,
+        count: l.characters.length,
+        twoWayCount: l.characters.filter((c) => c.twoWay).length,
+        createdAt: l.createdAt,
+        updatedAt: l.updatedAt,
+        atlas: listView(l).atlas,
+        cover: l.characters.slice(0, 4).map((c) => c.atlasIndex),
+        ...(l.disclaimer ? { disclaimer: l.disclaimer } : {}),
+      })),
+  };
+}
 
 /**
  * Every read is a cached S3 object (#9): after each write the API publishes JSON under m/

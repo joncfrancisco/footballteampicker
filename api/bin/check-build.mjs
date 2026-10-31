@@ -9,6 +9,7 @@ Object.assign(process.env, {
   SITE_HOSTNAME: "localhost",
   TURNSTILE_SECRET_PARAM: "/footballteampicker/build-check",
   AWS_REGION: "us-east-1",
+  ALERTS_TOPIC: "arn:aws:sns:us-east-1:020949219706:footballteampicker-build-check",
 });
 const result = await handler({
   rawPath: "/api/health",

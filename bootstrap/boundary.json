@@ -54,6 +54,18 @@
       }
     },
     {
+      "Sid": "OwnModerationAlerts",
+      "Effect": "Allow",
+      "Action": "sns:Publish",
+      "Resource": "arn:aws:sns:us-east-1:020949219706:footballteampicker-alerts"
+    },
+    {
+      "Sid": "TurnstileSecret",
+      "Effect": "Allow",
+      "Action": "secretsmanager:GetSecretValue",
+      "Resource": "arn:aws:secretsmanager:us-east-1:020949219706:secret:turnstile-secret-*"
+    },
+    {
       "Sid": "Metrics",
       "Effect": "Allow",
       "Action": "cloudwatch:PutMetricData",

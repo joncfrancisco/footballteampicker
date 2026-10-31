@@ -14,8 +14,10 @@ let store: MemoryStore;
 let publish: MemoryPublisher;
 let human: ReturnType<typeof vi.fn<HumanCheck>>;
 let api: ReturnType<typeof createApi>;
+const notifications: unknown[] = [];
 
 beforeEach(() => {
+  notifications.length = 0;
   store = new MemoryStore();
   publish = new MemoryPublisher();
   human = vi.fn<HumanCheck>(async (token) => (token === "ok" ? "ok" : "failed"));
@@ -26,6 +28,10 @@ beforeEach(() => {
     human,
     seeds: [seed],
     now: () => new Date("2026-11-01T00:00:00Z"),
+    ipSalt: "test-only-salt",
+    notifyReport: async (report) => {
+      notifications.push(report);
+    },
   });
 });
 
@@ -272,12 +278,69 @@ describe("lists", () => {
 
 describe("reports", () => {
   it("stores a report with a hashed IP", async () => {
+    const saved = await call("POST", "/api/teams", lolTeam());
     expect(
-      (await call("POST", "/api/reports", { targetId: "abc", targetType: "team", reason: "spam" }))
-        .status,
+      (
+        await call("POST", "/api/reports", {
+          targetId: saved.body.id,
+          targetType: "team",
+          reason: "spam",
+        })
+      ).status,
     ).toBe(204);
-    expect(store.reports[0]).toMatchObject({ targetId: "abc", reason: "spam" });
+    expect(store.reports[0]).toMatchObject({ targetId: saved.body.id, reason: "spam" });
     expect(store.reports[0]!.ipHash).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it("deduplicates networks, notifies once per reporter, and hides a list after three reports", async () => {
+    const created = await call("POST", "/api/lists", LIST);
+    const id = created.body.id as string;
+    const report = { targetId: id, targetType: "list", reason: "Prohibited image" };
+    for (const ip of ["198.51.100.1", "198.51.100.1", "198.51.100.2", "198.51.100.3"]) {
+      expect((await call("POST", "/api/reports", report, { "x-forwarded-for": ip })).status).toBe(
+        204,
+      );
+    }
+    expect(store.reports).toHaveLength(3);
+    expect(notifications).toHaveLength(3);
+    expect(store.lists.get(id)?.hidden).toBe(true);
+    expect(publish.json(`m/l/${id}.json`)).toBeUndefined();
+    expect(publish.json("m/browse/index.json")).toMatchObject({ lists: [] });
+    expect(
+      (
+        await call("PUT", `/api/lists/${id}`, LIST, {
+          authorization: `Bearer ${created.body.editToken}`,
+        })
+      ).status,
+    ).toBe(404);
+    expect((await call("POST", "/api/teams", newTeam({ id, ip: "Test" }))).status).toBe(404);
+  });
+
+  it("rejects missing targets and fails closed without a reporter salt", async () => {
+    expect(
+      (
+        await call("POST", "/api/reports", {
+          targetType: "team",
+          targetId: "missing",
+          reason: "spam",
+        })
+      ).status,
+    ).toBe(404);
+    const unavailable = createApi({
+      store,
+      publish,
+      human,
+      seeds: [seed],
+      reporterSalt: async () => undefined,
+    });
+    expect(
+      (
+        await unavailable(
+          req("POST", "/api/reports", { targetType: "list", targetId: seed.id, reason: "spam" }),
+        )
+      ).statusCode,
+    ).toBe(503);
+    expect(store.reports).toHaveLength(0);
   });
 });
 

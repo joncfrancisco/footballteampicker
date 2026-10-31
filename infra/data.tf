@@ -104,8 +104,23 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "media" {
 data "aws_iam_policy_document" "media_bucket" {
   statement {
     sid       = "CloudFrontRead"
-    actions   = ["s3:GetObject", "s3:ListBucket"]
-    resources = [aws_s3_bucket.media.arn, "${aws_s3_bucket.media.arn}/*"]
+    actions   = ["s3:GetObject"]
+    resources = ["${aws_s3_bucket.media.arn}/m/*"]
+    principals {
+      type        = "Service"
+      identifiers = ["cloudfront.amazonaws.com"]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "AWS:SourceArn"
+      values   = [aws_cloudfront_distribution.site.arn]
+    }
+  }
+
+  statement {
+    sid       = "CloudFrontMissingObjectStatus"
+    actions   = ["s3:ListBucket"]
+    resources = [aws_s3_bucket.media.arn]
     principals {
       type        = "Service"
       identifiers = ["cloudfront.amazonaws.com"]
