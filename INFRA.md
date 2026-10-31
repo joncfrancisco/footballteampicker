@@ -31,3 +31,17 @@ GitHub OIDC provider), the same as doorbell's roles.
 Every Terraform resource gets `app=footballteampicker` and `managed-by=terraform` (provider
 `default_tags`). `app` is the cost-allocation tag; re-run `bootstrap/bootstrap.sh` to activate it
 once the first tagged resources have existed for ~24 hours.
+
+## Static site (`infra/`, #4)
+
+`depthchart.joncfrancis.co` → Route 53 A/AAAA alias → CloudFront `E374QW7TXASG40` → S3
+`footballteampicker-site-020949219706` via OAC. ACM cert (us-east-1) DNS-validated by a CNAME
+this stack owns; the zone is read as `data`. Web ACL `footballteampicker-site` with two
+per-IP rate rules (2,000/5 min all paths, 300/5 min `/api/`), action from `waf_rate_action`.
+
+- Managed policies only (`CachingOptimized`, `SecurityHeadersPolicy`), so the CSP is a
+  build-time `<meta>` (`web/vite.config.ts`).
+- SPA routing is the `footballteampicker-spa-rewrite` CloudFront Function (extensionless path →
+  `/index.html`), not custom error responses, so real 404s stay 404s. CloudFront has
+  `s3:ListBucket` on the site bucket for the same reason (missing object → 404, not 403).
+- Behaviour budget is 5 (Free plan): default, `/api/*`, `/m/*`, `/t/*` + `/l/*`.
