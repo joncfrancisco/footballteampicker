@@ -62,9 +62,9 @@ resource "aws_cloudwatch_metric_alarm" "waf_blocks" {
   comparison_operator = "GreaterThanThreshold"
   treat_missing_data  = "notBreaching"
   # Global WAF metrics omit Region. These match this ACL's live CloudWatch dimensions.
-  dimensions          = { WebACL = aws_wafv2_web_acl.site.name, Rule = "ALL" }
-  alarm_actions       = [aws_sns_topic.alerts.arn]
-  ok_actions          = [aws_sns_topic.alerts.arn]
+  dimensions    = { WebACL = aws_wafv2_web_acl.site.name, Rule = "ALL" }
+  alarm_actions = [aws_sns_topic.alerts.arn]
+  ok_actions    = [aws_sns_topic.alerts.arn]
 }
 
 resource "aws_budgets_budget" "monthly" {
