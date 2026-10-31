@@ -1,0 +1,228 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ListOwnState",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::tfstate-020949219706",
+      "Condition": { "StringLike": { "s3:prefix": ["footballteampicker/*"] } }
+    },
+    {
+      "Sid": "ReadWriteOwnStateAndLock",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+      "Resource": "arn:aws:s3:::tfstate-020949219706/footballteampicker/*"
+    },
+    {
+      "Sid": "OwnBuckets",
+      "Effect": "Allow",
+      "Action": "s3:*",
+      "Resource": ["arn:aws:s3:::footballteampicker-*", "arn:aws:s3:::footballteampicker-*/*"]
+    },
+    {
+      "Sid": "OwnFunctions",
+      "Effect": "Allow",
+      "Action": "lambda:*",
+      "Resource": "arn:aws:lambda:us-east-1:020949219706:function:footballteampicker-*"
+    },
+    {
+      "Sid": "OwnTables",
+      "Effect": "Allow",
+      "Action": "dynamodb:*",
+      "Resource": "arn:aws:dynamodb:us-east-1:020949219706:table/footballteampicker-*"
+    },
+    {
+      "Sid": "OwnLogGroups",
+      "Effect": "Allow",
+      "Action": "logs:*",
+      "Resource": [
+        "arn:aws:logs:us-east-1:020949219706:log-group:/aws/lambda/footballteampicker-*",
+        "arn:aws:logs:us-east-1:020949219706:log-group:aws-waf-logs-footballteampicker*"
+      ]
+    },
+    {
+      "Sid": "OwnAlarmsTopicsBudgets",
+      "Effect": "Allow",
+      "Action": ["cloudwatch:*", "sns:*", "budgets:*"],
+      "Resource": [
+        "arn:aws:cloudwatch:us-east-1:020949219706:alarm:footballteampicker-*",
+        "arn:aws:sns:us-east-1:020949219706:footballteampicker-*",
+        "arn:aws:budgets::020949219706:budget/footballteampicker-*",
+        "arn:aws:budgets::020949219706:budget/footballteampicker-*/action/*"
+      ]
+    },
+    {
+      "Sid": "CreateApiRolesOnlyWithBoundary",
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreateRole",
+        "iam:PutRolePolicy",
+        "iam:AttachRolePolicy",
+        "iam:DetachRolePolicy",
+        "iam:DeleteRolePolicy",
+        "iam:PutRolePermissionsBoundary"
+      ],
+      "Resource": "arn:aws:iam::020949219706:role/footballteampicker-api*",
+      "Condition": {
+        "StringEquals": {
+          "iam:PermissionsBoundary": "arn:aws:iam::020949219706:policy/footballteampicker-boundary"
+        }
+      }
+    },
+    {
+      "Sid": "ManageApiRoles",
+      "Effect": "Allow",
+      "Action": [
+        "iam:GetRole",
+        "iam:GetRolePolicy",
+        "iam:ListRolePolicies",
+        "iam:ListAttachedRolePolicies",
+        "iam:ListInstanceProfilesForRole",
+        "iam:UpdateRole",
+        "iam:UpdateRoleDescription",
+        "iam:UpdateAssumeRolePolicy",
+        "iam:TagRole",
+        "iam:UntagRole",
+        "iam:DeleteRole"
+      ],
+      "Resource": "arn:aws:iam::020949219706:role/footballteampicker-api*"
+    },
+    {
+      "Sid": "PassApiRolesToLambda",
+      "Effect": "Allow",
+      "Action": "iam:PassRole",
+      "Resource": "arn:aws:iam::020949219706:role/footballteampicker-api*",
+      "Condition": { "StringEquals": { "iam:PassedToService": "lambda.amazonaws.com" } }
+    },
+    {
+      "Sid": "ReadBoundary",
+      "Effect": "Allow",
+      "Action": ["iam:GetPolicy", "iam:GetPolicyVersion"],
+      "Resource": "arn:aws:iam::020949219706:policy/footballteampicker-boundary"
+    },
+    {
+      "Sid": "NeverTouchCiRoles",
+      "Effect": "Deny",
+      "Action": "iam:*",
+      "Resource": "arn:aws:iam::020949219706:role/footballteampicker-gha-*"
+    },
+    {
+      "Sid": "NeverDropBoundary",
+      "Effect": "Deny",
+      "Action": ["iam:DeleteRolePermissionsBoundary", "iam:CreatePolicyVersion", "iam:DeletePolicy"],
+      "Resource": "*"
+    },
+    {
+      "Sid": "CreateTaggedDistributionsAndCerts",
+      "Effect": "Allow",
+      "Action": ["cloudfront:CreateDistribution", "acm:RequestCertificate"],
+      "Resource": "*",
+      "Condition": { "StringEquals": { "aws:RequestTag/app": "footballteampicker" } }
+    },
+    {
+      "Sid": "ChangeOwnDistributionsAndCerts",
+      "Effect": "Allow",
+      "Action": [
+        "cloudfront:UpdateDistribution",
+        "cloudfront:DeleteDistribution",
+        "cloudfront:CreateInvalidation",
+        "cloudfront:TagResource",
+        "cloudfront:UntagResource",
+        "acm:DeleteCertificate",
+        "acm:AddTagsToCertificate",
+        "acm:RemoveTagsFromCertificate"
+      ],
+      "Resource": "*",
+      "Condition": { "StringEquals": { "aws:ResourceTag/app": "footballteampicker" } }
+    },
+    {
+      "Sid": "OwnCloudFrontFunctions",
+      "Effect": "Allow",
+      "Action": [
+        "cloudfront:CreateFunction",
+        "cloudfront:UpdateFunction",
+        "cloudfront:PublishFunction",
+        "cloudfront:DeleteFunction",
+        "cloudfront:DescribeFunction",
+        "cloudfront:GetFunction"
+      ],
+      "Resource": "arn:aws:cloudfront::020949219706:function/footballteampicker-*"
+    },
+    {
+      "Sid": "OriginAccessControls",
+      "Effect": "Allow",
+      "Action": [
+        "cloudfront:CreateOriginAccessControl",
+        "cloudfront:GetOriginAccessControl",
+        "cloudfront:UpdateOriginAccessControl",
+        "cloudfront:DeleteOriginAccessControl"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "OwnWebAcls",
+      "Effect": "Allow",
+      "Action": "wafv2:*",
+      "Resource": [
+        "arn:aws:wafv2:us-east-1:020949219706:global/webacl/footballteampicker-*/*",
+        "arn:aws:wafv2:us-east-1:020949219706:global/ipset/footballteampicker-*/*",
+        "arn:aws:wafv2:us-east-1:020949219706:global/rulegroup/footballteampicker-*/*",
+        "arn:aws:wafv2:us-east-1:020949219706:global/managedruleset/*/*"
+      ]
+    },
+    {
+      "Sid": "AttachWebAclToDistribution",
+      "Effect": "Allow",
+      "Action": ["wafv2:GetWebACLForResource", "wafv2:ListResourcesForWebACL"],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ZoneRead",
+      "Effect": "Allow",
+      "Action": ["route53:GetHostedZone", "route53:ListResourceRecordSets", "route53:ListTagsForResource"],
+      "Resource": "arn:aws:route53:::hostedzone/Z02575211T1QV3GILBPJH"
+    },
+    {
+      "Sid": "OwnRecordsOnly",
+      "Effect": "Allow",
+      "Action": "route53:ChangeResourceRecordSets",
+      "Resource": "arn:aws:route53:::hostedzone/Z02575211T1QV3GILBPJH",
+      "Condition": {
+        "ForAllValues:StringLike": {
+          "route53:ChangeResourceRecordSetsNormalizedRecordNames": [
+            "depthchart.joncfrancis.co",
+            "_*.depthchart.joncfrancis.co"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "ReadEverywhereTerraformRefreshes",
+      "Effect": "Allow",
+      "Action": [
+        "route53:GetChange",
+        "route53:ListHostedZones",
+        "route53:ListHostedZonesByName",
+        "cloudfront:Get*",
+        "cloudfront:List*",
+        "cloudfront:Describe*",
+        "acm:DescribeCertificate",
+        "acm:ListCertificates",
+        "acm:ListTagsForCertificate",
+        "wafv2:List*",
+        "wafv2:Describe*",
+        "wafv2:CheckCapacity",
+        "logs:DescribeLogGroups",
+        "logs:ListTagsForResource",
+        "cloudwatch:DescribeAlarms",
+        "lambda:GetAccountSettings",
+        "dynamodb:ListTables",
+        "budgets:ViewBudget",
+        "budgets:DescribeBudgetActionsForAccount",
+        "iam:ListPolicies"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

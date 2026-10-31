@@ -1,0 +1,101 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ListOwnState",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::tfstate-020949219706",
+      "Condition": { "StringLike": { "s3:prefix": ["footballteampicker/*"] } }
+    },
+    {
+      "Sid": "ReadOwnState",
+      "Effect": "Allow",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::tfstate-020949219706/footballteampicker/*"
+    },
+    {
+      "Sid": "TakeTheStateLock",
+      "Effect": "Allow",
+      "Action": ["s3:PutObject", "s3:DeleteObject"],
+      "Resource": "arn:aws:s3:::tfstate-020949219706/footballteampicker/*.tflock"
+    },
+    {
+      "Sid": "ReadOwnBucketConfig",
+      "Effect": "Allow",
+      "Action": ["s3:GetBucket*", "s3:GetEncryptionConfiguration", "s3:GetLifecycleConfiguration", "s3:GetAccelerateConfiguration", "s3:GetReplicationConfiguration", "s3:GetIntelligentTieringConfiguration", "s3:ListBucket"],
+      "Resource": "arn:aws:s3:::footballteampicker-*"
+    },
+    {
+      "Sid": "ReadOwnStack",
+      "Effect": "Allow",
+      "Action": [
+        "lambda:Get*",
+        "lambda:List*",
+        "dynamodb:Describe*",
+        "dynamodb:ListTagsOfResource",
+        "logs:ListTagsForResource",
+        "logs:ListTagsLogGroup",
+        "cloudwatch:ListTagsForResource",
+        "sns:GetTopicAttributes",
+        "sns:ListTagsForResource",
+        "sns:ListSubscriptionsByTopic",
+        "budgets:ViewBudget",
+        "budgets:ListTagsForResource",
+        "budgets:DescribeBudgetAction*",
+        "iam:GetRole",
+        "iam:GetRolePolicy",
+        "iam:ListRolePolicies",
+        "iam:ListAttachedRolePolicies",
+        "iam:GetPolicy",
+        "iam:GetPolicyVersion",
+        "wafv2:Get*"
+      ],
+      "Resource": [
+        "arn:aws:lambda:us-east-1:020949219706:function:footballteampicker-*",
+        "arn:aws:dynamodb:us-east-1:020949219706:table/footballteampicker-*",
+        "arn:aws:logs:us-east-1:020949219706:log-group:/aws/lambda/footballteampicker-*",
+        "arn:aws:logs:us-east-1:020949219706:log-group:aws-waf-logs-footballteampicker*",
+        "arn:aws:cloudwatch:us-east-1:020949219706:alarm:footballteampicker-*",
+        "arn:aws:sns:us-east-1:020949219706:footballteampicker-*",
+        "arn:aws:budgets::020949219706:budget/footballteampicker-*",
+        "arn:aws:budgets::020949219706:budget/footballteampicker-*/action/*",
+        "arn:aws:iam::020949219706:role/footballteampicker-api*",
+        "arn:aws:iam::020949219706:policy/footballteampicker-boundary",
+        "arn:aws:wafv2:us-east-1:020949219706:global/*/footballteampicker-*/*",
+        "arn:aws:wafv2:us-east-1:020949219706:global/managedruleset/*/*"
+      ]
+    },
+    {
+      "Sid": "ZoneRead",
+      "Effect": "Allow",
+      "Action": ["route53:GetHostedZone", "route53:ListResourceRecordSets", "route53:ListTagsForResource"],
+      "Resource": "arn:aws:route53:::hostedzone/Z02575211T1QV3GILBPJH"
+    },
+    {
+      "Sid": "ReadEverywhereTerraformRefreshes",
+      "Effect": "Allow",
+      "Action": [
+        "route53:GetChange",
+        "route53:ListHostedZones",
+        "route53:ListHostedZonesByName",
+        "cloudfront:Get*",
+        "cloudfront:List*",
+        "cloudfront:Describe*",
+        "acm:DescribeCertificate",
+        "acm:ListCertificates",
+        "acm:ListTagsForCertificate",
+        "wafv2:List*",
+        "wafv2:Describe*",
+        "wafv2:CheckCapacity",
+        "wafv2:GetWebACLForResource",
+        "logs:DescribeLogGroups",
+        "cloudwatch:DescribeAlarms",
+        "lambda:GetAccountSettings",
+        "dynamodb:ListTables",
+        "budgets:DescribeBudgetActionsForAccount"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
