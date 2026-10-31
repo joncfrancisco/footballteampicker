@@ -26,6 +26,8 @@ const api = createApi({
   human: turnstile({ secret: async () => TEST_SECRET, hostname: "localhost", allowTestKeys: true }),
   seeds: [CharacterList.parse(lol)],
   ipSalt: "local-development-only",
+  // Rehearse the k6 scripts locally: LOADTEST_TOKEN=<32+ chars> npm run dev (#18).
+  ...(process.env.LOADTEST_TOKEN ? { loadtestToken: async () => process.env.LOADTEST_TOKEN } : {}),
 });
 
 createServer(async (req, res) => {

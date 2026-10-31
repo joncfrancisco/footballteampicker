@@ -1,3 +1,8 @@
+locals {
+  # A load-test window counts rate-rule matches instead of blocking them (#18).
+  waf_rate_action = var.loadtest_mode ? "count" : var.waf_rate_action
+}
+
 # Free plan: all-path rate limit plus three AWS managed groups. The API scope-down rate
 # rule is optional because Free subscription rejected the nested statement (#17 fallback).
 resource "aws_wafv2_web_acl" "site" {
@@ -14,11 +19,11 @@ resource "aws_wafv2_web_acl" "site" {
 
     action {
       dynamic "block" {
-        for_each = var.waf_rate_action == "block" ? [1] : []
+        for_each = local.waf_rate_action == "block" ? [1] : []
         content {}
       }
       dynamic "count" {
-        for_each = var.waf_rate_action == "count" ? [1] : []
+        for_each = local.waf_rate_action == "count" ? [1] : []
         content {}
       }
     }
@@ -46,11 +51,11 @@ resource "aws_wafv2_web_acl" "site" {
 
       action {
         dynamic "block" {
-          for_each = var.waf_rate_action == "block" ? [1] : []
+          for_each = local.waf_rate_action == "block" ? [1] : []
           content {}
         }
         dynamic "count" {
-          for_each = var.waf_rate_action == "count" ? [1] : []
+          for_each = local.waf_rate_action == "count" ? [1] : []
           content {}
         }
       }

@@ -116,13 +116,17 @@ resource "aws_lambda_function" "api" {
   }
 
   environment {
-    variables = {
-      TABLE                  = aws_dynamodb_table.main.name
-      MEDIA_BUCKET           = aws_s3_bucket.media.bucket
-      TURNSTILE_SECRET_PARAM = "/footballteampicker/turnstile-secret"
-      SITE_HOSTNAME          = var.domain
-      ALERTS_TOPIC           = aws_sns_topic.alerts.arn
-    }
+    variables = merge(
+      {
+        TABLE                  = aws_dynamodb_table.main.name
+        MEDIA_BUCKET           = aws_s3_bucket.media.bucket
+        TURNSTILE_SECRET_PARAM = "/footballteampicker/turnstile-secret"
+        SITE_HOSTNAME          = var.domain
+        ALERTS_TOPIC           = aws_sns_topic.alerts.arn
+      },
+      # Present only during a load-test window; the API skips nothing without it (#18).
+      var.loadtest_mode ? { LOADTEST_TOKEN_PARAM = "/footballteampicker/loadtest-token" } : {},
+    )
   }
 
   depends_on = [aws_iam_role_policy.api]

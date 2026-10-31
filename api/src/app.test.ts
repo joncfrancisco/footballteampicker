@@ -105,7 +105,10 @@ describe("routes", () => {
     expect(JSON.stringify(logs)).not.toMatch(/private-|198\.51|203\.0|secret-in/);
   });
   it("answers /api/health and 404s the rest", async () => {
-    expect(await call("GET", "/api/health")).toEqual({ status: 200, body: { ok: true } });
+    expect(await call("GET", "/api/health")).toEqual({
+      status: 200,
+      body: { ok: true, loadtest: false },
+    });
     expect((await call("GET", "/api/nope")).status).toBe(404);
     expect((await call("GET", "/api/teams")).status).toBe(404);
   });
@@ -163,6 +166,44 @@ describe("hourly rate limits", () => {
       now: () => new Date("2026-11-01T01:00:00Z"),
     });
     expect((await next(req("POST", "/api/teams", lolTeam()))).statusCode).toBe(201);
+  });
+});
+
+describe("load-test window (#18)", () => {
+  const secret = "l".repeat(40);
+  const windowApi = (token: string | undefined) =>
+    createApi({
+      store,
+      publish,
+      human,
+      seeds: [seed],
+      ipSalt: "test-only-salt",
+      now: () => new Date("2026-11-01T00:00:00Z"),
+      loadtestToken: async () => token,
+    });
+
+  it("skips Turnstile and rate limits only for the window's secret", async () => {
+    const api = windowApi(secret);
+    const health = await api(req("GET", "/api/health"));
+    expect(JSON.parse(health.body!)).toEqual({ ok: true, loadtest: true });
+    const headers = { "x-turnstile-token": "", "x-loadtest-token": secret };
+    for (let i = 0; i < 201; i++)
+      expect((await api(req("POST", "/api/teams", lolTeam(), headers))).statusCode).toBe(201);
+    expect(human).not.toHaveBeenCalled();
+    expect(store.rates.size).toBe(0);
+  });
+
+  it("treats a wrong, short or unconfigured token as an ordinary request", async () => {
+    const wrong = { "x-turnstile-token": "bad", "x-loadtest-token": "x".repeat(40) };
+    expect((await windowApi(secret)(req("POST", "/api/teams", lolTeam(), wrong))).statusCode).toBe(
+      403,
+    );
+    const short = { "x-turnstile-token": "bad", "x-loadtest-token": "short" };
+    expect((await windowApi("short")(req("POST", "/api/teams", lolTeam(), short))).statusCode).toBe(
+      403,
+    );
+    const off = { "x-turnstile-token": "bad", "x-loadtest-token": secret };
+    expect((await api(req("POST", "/api/teams", lolTeam(), off))).statusCode).toBe(403);
   });
 });
 

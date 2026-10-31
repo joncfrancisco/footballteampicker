@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      loadtest_mode:
+        description: "Open a load-test window (#18): WAF rate rules count, API accepts X-Loadtest-Token. Run again without it to close."
+        type: boolean
+        default: false
 
 # Never apply two pushes at once; let a running deploy finish.
 concurrency:
@@ -21,6 +26,9 @@ jobs:
     needs: ci
     runs-on: ubuntu-latest
     environment: production
+    env:
+      # Only a manual run can open a load-test window; every push to main closes it.
+      LOADTEST_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.loadtest_mode && 'true' || 'false' }}
     permissions:
       contents: read
       id-token: write
@@ -47,7 +55,7 @@ jobs:
       - run: terraform -chdir=infra init -input=false
       - name: terraform plan
         run: |
-          terraform -chdir=infra plan -input=false -no-color -out=tfplan | tee plan.txt
+          terraform -chdir=infra plan -input=false -no-color -var "loadtest_mode=$LOADTEST_MODE" -out=tfplan | tee plan.txt
           { echo '## terraform plan'; echo '```'; cat plan.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
       - run: terraform -chdir=infra apply -input=false -no-color tfplan
 
@@ -90,8 +98,10 @@ jobs:
             exit 0
           fi
           # Check the body too: a missing /api/* behaviour would fall through to index.html.
+          # `loadtest` must match this run, so a load-test window never outlives its deploy.
           for i in 1 2 3 4 5; do
-            body=$(curl -fsS "${url}api/health") && grep -q '"ok":true' <<<"$body" && exit 0
+            body=$(curl -fsS "${url}api/health") && grep -q '"ok":true' <<<"$body" &&
+              grep -q "\"loadtest\":$LOADTEST_MODE" <<<"$body" && exit 0
             echo "attempt $i: ${body:-request failed}"; sleep 10
           done
           exit 1

@@ -62,9 +62,48 @@ Re-run `bootstrap/bootstrap.sh` with admin credentials when bootstrap policy JSO
 It creates the budget execution role and deny policy and grants CI only PassRole to Budgets.
 Normal Terraform apply cannot change these bootstrap roles or the permissions boundary.
 
+## Load-test window
+
+The #18 load test runs against production, from one machine, so every request shares one IP.
+A window relaxes exactly two things: WAF rate rules switch from Block to Count, and the API
+accepts the `X-Loadtest-Token` header in place of Turnstile and the per-IP app limits. Lambda
+reserved concurrency (25), the kill switch, the budget action and every other WAF rule stay
+as they are, because those are what the test measures.
+
+Only a manual deploy (`workflow_dispatch` with `loadtest_mode`) can open a window. Every push
+to `main` closes it, and the deploy smoke test fails if `/api/health` reports a `loadtest`
+value other than the one the run asked for. The token is a fresh SecureString
+`/footballteampicker/loadtest-token` per window; the API ignores tokens shorter than 32
+characters and reads the parameter only while `LOADTEST_TOKEN_PARAM` is set.
+
+Needs operator AWS credentials, an authenticated `gh` and [k6](https://k6.io)
+(`brew install k6`). Don't open a window while the kill switch is under test.
+
+```sh
+bin/loadtest open        # new token, deploy with loadtest_mode=true; health shows "loadtest":true
+bin/loadtest run flow    # 100 users × 10 minutes, the real flow (~60k requests)
+bin/loadtest run burst   # 100 full-team shares in the same second
+bin/loadtest close       # deploy with loadtest_mode=false, delete the token
+```
+
+`flow` passes with zero 5xx, API p95 < 1 s, CloudFront p95 time-to-first-byte < 300 ms and
+
+> 99% checks; `burst` passes when every share succeeds within 3 retries. Afterwards confirm
+> in CloudWatch that `footballteampicker-api` had no `Throttles` during `flow` and the kill
+> switch didn't trip (`bin/killswitch status`), and record the numbers in INFRA.md
+> § Capacity and load test. The test saves roughly 300–400 teams titled "Load test …"; they're
+> unlisted and harmless, like any team nobody has the link to.
+
+The #17 flood check runs outside a window, with WAF blocking: `k6 run loadtest/flood.js`
+sends 50 requests/s to `/api/health` from one IP and passes when WAF answers 403 within five
+minutes. Your IP is then blocked from the whole site for about five minutes.
+
+Rehearse any script locally first: `LOADTEST_TOKEN=<32+ characters> npm run dev`, then run it
+with `BASE_URL=http://[::1]:5173` (Vite listens on IPv6 localhost) and the same token.
+
 ## Remaining launch runbook
 
-Production Turnstile public key configuration, load-test windows, rollback details, rotations,
-and seed regeneration are tracked in #15/#17/#18 and
+Production Turnstile public key configuration, rollback details, rotations, and seed
+regeneration are tracked in #15/#17 and
 will be filled in as those mechanisms are deployed. Public writes remain gated until the
 matching public Turnstile site key is configured and launch checks are complete.
