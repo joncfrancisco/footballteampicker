@@ -35,6 +35,7 @@ data "aws_iam_policy_document" "api" {
     sid = "Table"
     actions = [
       "dynamodb:GetItem",
+      "dynamodb:BatchGetItem",
       "dynamodb:PutItem",
       "dynamodb:UpdateItem",
       "dynamodb:DeleteItem",
