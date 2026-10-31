@@ -14,6 +14,11 @@ export default tseslint.config(
     rules: { "@typescript-eslint/no-unused-vars": ["error", { ignoreRestSiblings: true }] },
   },
   {
+    // k6 scripts (#18) run in k6's own runtime, not Node or a browser.
+    files: ["loadtest/**/*.js"],
+    languageOptions: { globals: { __ENV: "readonly", __ITER: "readonly", open: "readonly" } },
+  },
+  {
     files: ["web/src/**/*.{ts,tsx}"],
     languageOptions: { globals: { ...globals.browser } },
     plugins: { "react-hooks": reactHooks },

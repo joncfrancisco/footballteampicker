@@ -34,6 +34,10 @@ export async function handler(event: Event): Promise<Result> {
       reporterSalt: ssmSecret("/footballteampicker/ip-salt"),
       notifyReport: reportNotifier(env("ALERTS_TOPIC"), env("SITE_HOSTNAME")),
       logRequest: (record) => console.info(JSON.stringify(record)),
+      // Set only while Terraform's loadtest_mode is on (#18).
+      ...(process.env.LOADTEST_TOKEN_PARAM
+        ? { loadtestToken: ssmSecret(process.env.LOADTEST_TOKEN_PARAM) }
+        : {}),
     });
   }
   return api(event);

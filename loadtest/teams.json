@@ -1,0 +1,111 @@
+{
+  "listId": "demo-lol",
+  "teams": [
+    {
+      "title": "Load test 4-3",
+      "listId": "demo-lol",
+      "offense": {
+        "depth": {
+          "QB": ["Aatrox", "Ahri", "Akali"],
+          "RB": ["Akshan", "Alistar", "Ambessa"],
+          "FB": ["Amumu", "Anivia"],
+          "WR": ["Annie", "Aphelios", "Ashe", "AurelionSol", "Aurora", "Azir"],
+          "TE": ["Bard", "Belveth", "Blitzcrank"],
+          "LT": ["Brand", "Braum"],
+          "LG": ["Briar", "Caitlyn"],
+          "C": ["Camille", "Cassiopeia"],
+          "RG": ["Chogath", "Corki"],
+          "RT": ["Darius", "Diana"]
+        },
+        "formation": "11-singleback"
+      },
+      "defense": {
+        "front": "4-3",
+        "depth": {
+          "LDE": ["DrMundo", "Draven"],
+          "LDT": ["Ekko", "Elise"],
+          "RDT": ["Evelynn", "Ezreal"],
+          "RDE": ["Fiddlesticks", "Fiora"],
+          "WLB": ["Fizz", "Galio"],
+          "MLB": ["Gangplank", "Garen"],
+          "SLB": ["Gnar", "Gragas"],
+          "LCB": ["Graves", "Gwen"],
+          "RCB": ["Hecarim", "Heimerdinger"],
+          "NB": ["Hwei", "Illaoi"],
+          "SS": ["Irelia", "Ivern"],
+          "FS": ["Janna", "JarvanIV"],
+          "DB": ["Jax"]
+        },
+        "formation": "43-over"
+      },
+      "specialTeams": {
+        "K": ["Aatrox"],
+        "P": ["Akshan"],
+        "LS": ["Amumu"],
+        "H": ["Annie"],
+        "KR": ["Bard", "Brand"],
+        "PR": ["Briar", "Camille"]
+      },
+      "staff": {
+        "HC": "Jayce",
+        "OC": "Jhin",
+        "DC": "Jinx",
+        "STC": "KSante",
+        "GM": "Kaisa"
+      }
+    },
+    {
+      "title": "Load test 3-4",
+      "listId": "demo-lol",
+      "offense": {
+        "depth": {
+          "QB": ["Aatrox", "Ahri", "Akali"],
+          "RB": ["Akshan", "Alistar", "Ambessa"],
+          "FB": ["Amumu", "Anivia"],
+          "WR": ["Annie", "Aphelios", "Ashe", "AurelionSol", "Aurora", "Azir"],
+          "TE": ["Bard", "Belveth", "Blitzcrank"],
+          "LT": ["Brand", "Braum"],
+          "LG": ["Briar", "Caitlyn"],
+          "C": ["Camille", "Cassiopeia"],
+          "RG": ["Chogath", "Corki"],
+          "RT": ["Darius", "Diana"]
+        },
+        "formation": "11-singleback"
+      },
+      "defense": {
+        "front": "3-4",
+        "depth": {
+          "LDE": ["DrMundo", "Draven"],
+          "NT": ["Ekko", "Elise"],
+          "RDE": ["Evelynn", "Ezreal"],
+          "LOLB": ["Fiddlesticks", "Fiora"],
+          "LILB": ["Fizz", "Galio"],
+          "RILB": ["Gangplank", "Garen"],
+          "ROLB": ["Gnar", "Gragas"],
+          "LCB": ["Graves", "Gwen"],
+          "RCB": ["Hecarim", "Heimerdinger"],
+          "NB": ["Hwei", "Illaoi"],
+          "SS": ["Irelia", "Ivern"],
+          "FS": ["Janna", "JarvanIV"],
+          "DB": ["Jax"]
+        },
+        "formation": "34-okie"
+      },
+      "specialTeams": {
+        "K": ["Aatrox"],
+        "P": ["Akshan"],
+        "LS": ["Amumu"],
+        "H": ["Annie"],
+        "KR": ["Bard", "Brand"],
+        "PR": ["Briar", "Camille"]
+      },
+      "staff": {
+        "HC": "Jayce",
+        "OC": "Jhin",
+        "DC": "Jinx",
+        "STC": "KSante",
+        "GM": "Kaisa"
+      }
+    }
+  ]
+}

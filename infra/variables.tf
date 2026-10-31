@@ -26,3 +26,9 @@ variable "waf_api_rate_enabled" {
   type        = bool
   default     = false
 }
+
+variable "loadtest_mode" {
+  description = "Load-test window (#18): WAF rate rules count instead of block, and the API accepts the X-Loadtest-Token secret. Only a manual deploy can turn it on; every push to main turns it off."
+  type        = bool
+  default     = false
+}

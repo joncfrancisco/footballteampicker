@@ -39,6 +39,11 @@ export type Deps = {
     targetId: string;
     reason: string;
   }) => Promise<void>;
+  /**
+   * Load-test window only (#18): a request carrying this secret in `x-loadtest-token` skips
+   * Turnstile and the app rate limits. Absent in normal production, so nothing is skipped.
+   */
+  loadtestToken?: () => Promise<string | undefined>;
 };
 
 const MAX_BODY = 64 * 1024;
@@ -71,7 +76,13 @@ export function createApi(deps: Deps) {
   const seeds = new Map(deps.seeds.map((l) => [l.id, l]));
 
   const routes: [string, RegExp, (e: Event, m: RegExpMatchArray) => Promise<Result>, string][] = [
-    ["GET", /^\/api\/health$/, async () => json(200, { ok: true }), "GET /api/health"],
+    [
+      "GET",
+      /^\/api\/health$/,
+      // The deploy smoke test checks `loadtest` so a load-test window can't outlive its deploy.
+      async () => json(200, { ok: true, loadtest: !!deps.loadtestToken }),
+      "GET /api/health",
+    ],
     ["POST", /^\/api\/lists$/, createList, "POST /api/lists"],
     ["PUT", /^\/api\/lists\/([A-Za-z0-9]{10})$/, updateList, "PUT /api/lists/:id"],
     ["DELETE", /^\/api\/lists\/([A-Za-z0-9]{10})$/, deleteList, "DELETE /api/lists/:id"],
@@ -303,13 +314,24 @@ export function createApi(deps: Deps) {
     };
   }
 
+  /** True only during a load-test window, for a request carrying the window's secret. */
+  async function loadtest(event: Event): Promise<boolean> {
+    const given = header(event, "x-loadtest-token");
+    if (!deps.loadtestToken || !given) return false;
+    const secret = await deps.loadtestToken();
+    // A short or missing secret never unlocks anything.
+    return !!secret && secret.length >= 32 && tokenMatches(given, sha256(secret));
+  }
+
   async function requireHuman(event: Event) {
+    if (await loadtest(event)) return;
     const result = await deps.human(header(event, "x-turnstile-token"), clientIp(event));
     if (result === "unavailable") throw new HttpError(503, { error: "writes_unavailable" });
     if (result === "failed") throw new HttpError(403, { error: "human_check_failed" });
   }
 
   async function enforceRate(event: Event, kind: keyof typeof RATE_LIMITS) {
+    if (await loadtest(event)) return;
     const salt = deps.reporterSalt ? await deps.reporterSalt() : deps.ipSalt;
     if (!salt) throw new HttpError(503, { error: "writes_unavailable" });
     const seconds = Math.floor(new Date(now()).getTime() / 1000);

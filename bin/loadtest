@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# Load-test window for production (#18). Needs operator AWS credentials for account
+# 020949219706, an authenticated `gh`, and k6. See DEPLOY.md § Load-test window.
+#
+#   bin/loadtest open           new token in SSM, deploy with loadtest_mode=true
+#   bin/loadtest run flow|burst  run a k6 script with the window's token
+#   bin/loadtest close          deploy with loadtest_mode=false, delete the token
+#   bin/loadtest status         is a window open?
+set -euo pipefail
+
+PARAM=/footballteampicker/loadtest-token
+SITE=${BASE_URL:-https://depthchart.joncfrancis.co}
+REPO=joncfrancisco/footballteampicker
+cd "$(dirname "$0")/.."
+
+status() { curl -fsS "$SITE/api/health"; echo; }
+
+deploy() {
+  gh workflow run deploy.yml --repo "$REPO" --ref main -f "loadtest_mode=$1"
+  sleep 5
+  run=$(gh run list --repo "$REPO" --workflow deploy.yml --limit 1 --json databaseId -q '.[0].databaseId')
+  gh run watch "$run" --repo "$REPO" --exit-status
+}
+
+case "${1:-}" in
+  open)
+    # A fresh secret per window; the API ignores tokens shorter than 32 characters.
+    aws ssm put-parameter --region us-east-1 --name "$PARAM" --type SecureString --overwrite \
+      --value "$(openssl rand -base64 36 | tr -d '\n/+=')" >/dev/null
+    deploy true
+    status
+    ;;
+  run)
+    script=${2:?usage: bin/loadtest run flow|burst}
+    token=$(aws ssm get-parameter --region us-east-1 --name "$PARAM" --with-decryption \
+      --query Parameter.Value --output text)
+    LOADTEST_TOKEN=$token BASE_URL=$SITE k6 run "loadtest/$script.js"
+    ;;
+  close)
+    deploy false
+    aws ssm delete-parameter --region us-east-1 --name "$PARAM" 2>/dev/null || true
+    status
+    ;;
+  status) status ;;
+  *)
+    sed -n 2,9p "$0"
+    exit 1
+    ;;
+esac

@@ -16,6 +16,7 @@ const result = await handler({
   requestContext: { http: { method: "GET" } },
 });
 assert.equal(result.statusCode, 200);
-assert.deepEqual(JSON.parse(result.body), { ok: true });
+// No LOADTEST_TOKEN_PARAM, as in normal production: no load-test window (#18).
+assert.deepEqual(JSON.parse(result.body), { ok: true, loadtest: false });
 const { handler: kill } = await import("../dist/kill.mjs");
 assert.deepEqual(await kill({ Records: [] }), { paused: false });
