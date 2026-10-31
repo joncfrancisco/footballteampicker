@@ -20,3 +20,9 @@ variable "waf_rate_action" {
     error_message = "waf_rate_action must be \"block\" or \"count\"."
   }
 }
+
+variable "waf_api_rate_enabled" {
+  description = "Optional API scope-down rate rule; disabled for the flat-rate Free plan (#17 fallback)."
+  type        = bool
+  default     = false
+}
