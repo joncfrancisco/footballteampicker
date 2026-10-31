@@ -1,0 +1,43 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "OwnTables",
+      "Effect": "Allow",
+      "Action": "dynamodb:*",
+      "Resource": "arn:aws:dynamodb:us-east-1:020949219706:table/footballteampicker-*"
+    },
+    {
+      "Sid": "OwnBuckets",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:ListBucket"],
+      "Resource": ["arn:aws:s3:::footballteampicker-*", "arn:aws:s3:::footballteampicker-*/*"]
+    },
+    {
+      "Sid": "OwnLogs",
+      "Effect": "Allow",
+      "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
+      "Resource": "arn:aws:logs:us-east-1:020949219706:log-group:/aws/lambda/footballteampicker-*"
+    },
+    {
+      "Sid": "OwnFunctionsKillSwitch",
+      "Effect": "Allow",
+      "Action": ["lambda:GetFunctionConcurrency", "lambda:PutFunctionConcurrency"],
+      "Resource": "arn:aws:lambda:us-east-1:020949219706:function:footballteampicker-*"
+    },
+    {
+      "Sid": "InvalidateOwnDistribution",
+      "Effect": "Allow",
+      "Action": "cloudfront:CreateInvalidation",
+      "Resource": "*",
+      "Condition": { "StringEquals": { "aws:ResourceTag/app": "footballteampicker" } }
+    },
+    {
+      "Sid": "Metrics",
+      "Effect": "Allow",
+      "Action": "cloudwatch:PutMetricData",
+      "Resource": "*",
+      "Condition": { "StringEquals": { "cloudwatch:namespace": "footballteampicker" } }
+    }
+  ]
+}
