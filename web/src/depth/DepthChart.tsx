@@ -149,6 +149,7 @@ function Cell(props: {
         <>
           <Sprite list={list} index={s.character.atlasIndex} size={32} />
           <span className="depth-name">{s.character.name}</span>
+          {s.character.twoWay && <span className="two-way-text">2W</span>}
         </>
       ) : (
         <span className="depth-empty">{s.label}</span>

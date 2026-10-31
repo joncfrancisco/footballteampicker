@@ -33,6 +33,7 @@ import { jumpToNearestSpot } from "./keyboard";
 export type Selection = { kind: "pool"; id: CharId } | { kind: "spot"; spot: Spot } | null;
 
 type LineupValue = {
+  readOnly: boolean;
   list: LoadedList;
   team: Team;
   /** Sides each character plays. */
@@ -63,6 +64,7 @@ const collision: CollisionDetection = (args) =>
   args.pointerCoordinates ? pointerWithin(args) : closestCenter(args);
 
 type Props = {
+  readOnly?: boolean;
   list: LoadedList;
   team: Team;
   onChange: (team: Team) => void;
@@ -76,7 +78,17 @@ type Props = {
  * to drop) and tap-to-place. Every edit goes through the shared lineup rules; a refused one
  * snaps back with the reason.
  */
-export function Lineup({ list, team, onChange, onNotice, children }: Props) {
+export function Lineup({
+  list,
+  team,
+  onChange: change,
+  onNotice,
+  children,
+  readOnly = false,
+}: Props) {
+  const onChange = (next: Team) => {
+    if (!readOnly) change(next);
+  };
   const [selected, setSelected] = useState<Selection>(null);
   const [dragging, setDragging] = useState<CharId | null>(null);
   const sensors = useSensors(
@@ -108,12 +120,14 @@ export function Lineup({ list, team, onChange, onNotice, children }: Props) {
   );
 
   const value: LineupValue = {
+    readOnly,
     list,
     team,
     sides: usage(team),
     selected,
     selectPool,
     activateSpot: (spot) => {
+      if (readOnly) return;
       if (selected?.kind === "pool") return apply(place(team, list.byId, selected.id, spot));
       if (selected?.kind === "spot") {
         if (sameSpot(selected.spot, spot)) return setSelected(null);

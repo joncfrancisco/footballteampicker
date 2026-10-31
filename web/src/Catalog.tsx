@@ -4,6 +4,7 @@ import { loadBrowse, loadList, MissingList, SEED_LISTS, summarize, type LoadedLi
 import { ownedListIds } from "./ownership";
 import { Sprite } from "./Sprite";
 import { useResource } from "./useResource";
+import { ShareLink } from "./ShareMenu";
 
 export const normalizeSearch = (value: string) =>
   value
@@ -183,6 +184,7 @@ export function ListPage({
   return (
     <section className="catalog">
       <h2>{list.title}</h2>
+      <ShareLink url={`${location.origin}/l/${list.id}`} />
       <p>
         {list.ip} · {list.characters.length} characters ·{" "}
         {list.characters.filter((c) => c.twoWay).length} two-way

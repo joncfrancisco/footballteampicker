@@ -824,3 +824,36 @@ a {
   border: 1px solid var(--accent);
   border-radius: 6px;
 }
+
+.share-link {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+}
+.share-link input {
+  font: inherit;
+  min-height: 44px;
+  max-width: 100%;
+  width: 22rem;
+  padding: 8px;
+  color: inherit;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.share-link label {
+  max-width: 100%;
+}
+.share-menu {
+  padding: 8px 0;
+}
+.slot:disabled,
+.depth-cell:disabled,
+.section-tile:disabled {
+  cursor: default;
+}
+.builder-layout:has(> .builder-main:only-child) {
+  grid-template-columns: minmax(0, 1fr);
+}

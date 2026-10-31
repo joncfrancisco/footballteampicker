@@ -34,6 +34,8 @@ jobs:
       # web/dist for S3; api/dist is zipped by Terraform (source_code_hash), so code and
       # infra changes share one path.
       - run: npm run build
+        env:
+          VITE_TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
 
       - uses: aws-actions/configure-aws-credentials@v5
         with:
@@ -48,6 +50,17 @@ jobs:
           terraform -chdir=infra plan -input=false -no-color -out=tfplan | tee plan.txt
           { echo '## terraform plan'; echo '```'; cat plan.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
       - run: terraform -chdir=infra apply -input=false -no-color tfplan
+
+      # Saved teams keep immutable seed atlas URLs, even after the bundled seed changes.
+      - name: Publish seed atlases
+        run: |
+          bucket=$(terraform -chdir=infra output -raw media_bucket)
+          for list in seed/*/list.json; do
+            id=$(jq -r .id "$list")
+            atlas=$(jq -r .atlas.src "$list")
+            aws s3 cp "$(dirname "$list")/$atlas" "s3://$bucket/m/seeds/$id/$atlas" \
+              --content-type image/webp --cache-control "public,max-age=31536000,immutable"
+          done
 
       - name: Upload site
         run: |

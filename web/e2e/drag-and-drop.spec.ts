@@ -1,6 +1,8 @@
 import { devices, expect, test, type Locator, type Page } from "@playwright/test";
 
 async function drag(page: Page, from: Locator, to: Locator) {
+  // Keep the destination away from the edge so auto-scroll cannot move it mid-drag.
+  await to.evaluate((el) => el.scrollIntoView({ block: "center", inline: "nearest" }));
   const a = (await from.boundingBox())!;
   const b = (await to.boundingBox())!;
   await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
