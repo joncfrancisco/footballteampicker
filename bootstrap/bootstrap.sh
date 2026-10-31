@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # One-time, admin-only setup that the CI roles must never be able to change: this repo's two
-# CI roles, the permissions boundary for roles the stack creates, and the GitHub environment.
+# CI roles, the permissions boundary for roles the stack creates, the moderator role and its
+# agent user (#50), and the GitHub environment.
 # The state bucket and GitHub's OIDC provider are account-wide and owned by doorbell's bootstrap.
 # Idempotent; re-run it after editing any JSON in this directory.
 #
@@ -60,6 +61,23 @@ if ! aws iam get-policy --policy-arn "$BUDGET_DENY_ARN" >/dev/null 2>&1; then
 fi
 role footballteampicker-budget-action trust-budget.json policy-budget.json \
     "footballteampicker: budget action may attach only the API deny policy"
+
+# Moderation (#50). The daily agent (#52) signs in as this user, whose only permission is to
+# assume the moderator role. Create its access key by hand (DEPLOY.md); never put it in the repo
+# or Terraform state. The role lives here, not in infra/, so CI can never widen it.
+AGENT_USER=footballteampicker-moderator-agent
+aws iam get-user --user-name "$AGENT_USER" >/dev/null 2>&1 ||
+    aws iam create-user --user-name "$AGENT_USER" --tags "${TAGS[@]}" >/dev/null
+aws iam put-user-policy --user-name "$AGENT_USER" --policy-name footballteampicker \
+    --policy-document file://policy-moderator-agent.json
+echo "user: $AGENT_USER"
+# A just-created user takes a few seconds to become a valid trust principal.
+aws iam wait user-exists --user-name "$AGENT_USER"
+aws iam get-role --role-name footballteampicker-moderator >/dev/null 2>&1 || sleep 15
+role footballteampicker-moderator trust-moderator.json policy-moderator.json \
+    "footballteampicker: moderation only (queue, takedown, dismiss); never restore"
+aws iam put-role-permissions-boundary --role-name footballteampicker-moderator \
+    --permissions-boundary "$BOUNDARY_ARN"
 
 # GitHub: the deploy role is only usable from the production environment, which only main
 # can deploy to. The plan role ARN is a repo variable because PR jobs have no environment.

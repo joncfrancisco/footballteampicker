@@ -1,0 +1,97 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadQueueAndTargets",
+      "Effect": "Allow",
+      "Action": ["dynamodb:GetItem", "dynamodb:BatchGetItem", "dynamodb:Query"],
+      "Resource": [
+        "arn:aws:dynamodb:us-east-1:020949219706:table/footballteampicker",
+        "arn:aws:dynamodb:us-east-1:020949219706:table/footballteampicker/index/GSI1"
+      ],
+      "Condition": {
+        "ForAllValues:StringLike": {
+          "dynamodb:LeadingKeys": ["LIST#*", "TEAM#*", "REPORT#*", "PUBLIC"]
+        }
+      }
+    },
+    {
+      "Sid": "UpdateModerationFieldsOnly",
+      "Effect": "Allow",
+      "Action": "dynamodb:UpdateItem",
+      "Resource": "arn:aws:dynamodb:us-east-1:020949219706:table/footballteampicker",
+      "Condition": {
+        "ForAllValues:StringLike": {
+          "dynamodb:LeadingKeys": ["LIST#*", "TEAM#*", "REPORT#*"]
+        },
+        "ForAllValues:StringEquals": {
+          "dynamodb:Attributes": [
+            "PK",
+            "SK",
+            "hidden",
+            "version",
+            "GSI1PK",
+            "GSI1SK",
+            "status",
+            "action",
+            "resolvedAt",
+            "resolvedBy",
+            "note"
+          ]
+        },
+        "StringEqualsIfExists": { "dynamodb:ReturnValues": ["NONE", "UPDATED_NEW"] }
+      }
+    },
+    {
+      "Sid": "ReadPublicMedia",
+      "Effect": "Allow",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::footballteampicker-media-020949219706/m/*"
+    },
+    {
+      "Sid": "ListPortraits",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::footballteampicker-media-020949219706",
+      "Condition": { "StringLike": { "s3:prefix": "m/img/*" } }
+    },
+    {
+      "Sid": "ArchiveAndRebuildBrowse",
+      "Effect": "Allow",
+      "Action": "s3:PutObject",
+      "Resource": [
+        "arn:aws:s3:::footballteampicker-media-020949219706/private/takedown/*",
+        "arn:aws:s3:::footballteampicker-media-020949219706/m/browse/*"
+      ]
+    },
+    {
+      "Sid": "UnpublishTargets",
+      "Effect": "Allow",
+      "Action": "s3:DeleteObject",
+      "Resource": [
+        "arn:aws:s3:::footballteampicker-media-020949219706/m/l/*",
+        "arn:aws:s3:::footballteampicker-media-020949219706/m/t/*",
+        "arn:aws:s3:::footballteampicker-media-020949219706/m/img/*"
+      ]
+    },
+    {
+      "Sid": "NeverReadRecoveryCopies",
+      "Effect": "Deny",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::footballteampicker-media-020949219706/private/*"
+    },
+    {
+      "Sid": "NeverListRecoveryCopies",
+      "Effect": "Deny",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::footballteampicker-media-020949219706",
+      "Condition": { "StringLike": { "s3:prefix": "private/*" } }
+    },
+    {
+      "Sid": "InvalidateSite",
+      "Effect": "Allow",
+      "Action": "cloudfront:CreateInvalidation",
+      "Resource": "arn:aws:cloudfront::020949219706:distribution/E374QW7TXASG40"
+    }
+  ]
+}
