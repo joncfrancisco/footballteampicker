@@ -119,6 +119,37 @@ User-uploaded fan art of third-party characters is expected, and takedown reques
 within days. Quarantined portraits are private recovery copies under `private/takedown/`.
 CloudFront's object permission is restricted to `m/*`; it cannot read that recovery prefix.
 
+## Monitoring and budget
+
+CloudWatch alarms send both ALARM and OK transitions to `footballteampicker-alerts`:
+
+| Alarm                              | Signal                                                         |
+| ---------------------------------- | -------------------------------------------------------------- |
+| `footballteampicker-api-errors`    | Lambda `Errors` ≥5 in 5 minutes                                |
+| `footballteampicker-api-throttles` | Lambda `Throttles` >0 in each of three 5-minute periods        |
+| `footballteampicker-cdn-errors`    | Default CloudFront `5xxErrorRate` >5% in both 5-minute periods |
+| `footballteampicker-waf-blocks`    | WAF `BlockedRequests` >10,000 in one hour; informational       |
+
+All treat absent error data as not breaching. CloudFront uses `Region=Global`; the global
+WAF ACL's metrics use `WebACL` and `Rule=ALL` without a Region dimension. No paid additional
+CloudFront metrics or Route 53 health check are enabled.
+
+Budget `footballteampicker-monthly` has a $5 monthly limit, filtered to `app=footballteampicker`,
+and emails the owner at 50% actual and 100% forecast. Billing must first expose and activate
+the `app` cost-allocation tag; newly created resource tags can take about 24 hours to appear.
+At the 2026-10-31 setup check the tag was not yet available, so activation and email delivery
+verification remain launch tasks. The budget action at $10 and write kill switch are #17.
+
+Request logs contain a normalized route, HTTP status, and latency in milliseconds. They
+contain no raw URL, request body, IP, authorization header, or Turnstile/edit token. Unexpected
+errors log only their type. Lambda JSON logging retains data for 30 days in
+`/aws/lambda/footballteampicker-api`.
+
+After confirming the SNS subscription, test each alarm with `aws cloudwatch set-alarm-state`
+to ALARM and then OK, confirm the emails, and inspect alarm action history. These four alarms
+only notify; test-firing them does not pause the API. The kill-switch alarm is a separate test
+and should follow its runbook.
+
 ## Deploys (`.github/workflows/deploy.yml`)
 
 Push to `main` → CI (`ci.yml`) → in the `production` environment: build, `terraform apply`

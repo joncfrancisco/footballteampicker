@@ -82,6 +82,28 @@ function lolTeam(): Team {
 }
 
 describe("routes", () => {
+  it("logs normalized routes, status and latency without request secrets or IPs", async () => {
+    const logs: unknown[] = [];
+    const logged = createApi({
+      store,
+      publish,
+      human,
+      seeds: [seed],
+      logRequest: (record) => logs.push(record),
+    });
+    await logged(
+      req("PUT", "/api/lists/abcdefghij", LIST, {
+        authorization: "Bearer private-edit-token",
+        "x-turnstile-token": "private-human-token",
+      }),
+    );
+    await logged(req("GET", "/api/secret-in-unmatched-path"));
+    expect(logs).toEqual([
+      { route: "PUT /api/lists/:id", status: 403, latencyMs: expect.any(Number) },
+      { route: "unmatched", status: 404, latencyMs: expect.any(Number) },
+    ]);
+    expect(JSON.stringify(logs)).not.toMatch(/private-|198\.51|203\.0|secret-in/);
+  });
   it("answers /api/health and 404s the rest", async () => {
     expect(await call("GET", "/api/health")).toEqual({ status: 200, body: { ok: true } });
     expect((await call("GET", "/api/nope")).status).toBe(404);

@@ -33,6 +33,7 @@ export async function handler(event: Event): Promise<Result> {
       seeds: [CharacterList.parse(lol)],
       reporterSalt: ssmSecret("/footballteampicker/ip-salt"),
       notifyReport: reportNotifier(env("ALERTS_TOPIC"), env("SITE_HOSTNAME")),
+      logRequest: (record) => console.info(JSON.stringify(record)),
     });
   }
   return api(event);
