@@ -1,23 +1,31 @@
-import { useEffect, useState } from "react";
+import { newTeam, type Team } from "@ftp/shared";
+import { useState } from "react";
+import { Builder } from "./Builder";
+import { fillDemo } from "./demo";
+import { SEED_LISTS } from "./lists";
 
-type Health = "checking" | "ok" | "down";
+const list = SEED_LISTS[0]!;
+
+function initialTeam(): Team {
+  const team = newTeam(list);
+  return new URLSearchParams(window.location.search).get("fill") === "demo"
+    ? fillDemo(team, list)
+    : team;
+}
 
 export function App() {
-  const [health, setHealth] = useState<Health>("checking");
-
-  useEffect(() => {
-    fetch("/api/health")
-      .then((r) => setHealth(r.ok ? "ok" : "down"))
-      .catch(() => setHealth("down"));
-  }, []);
+  const [team, setTeam] = useState(initialTeam);
 
   return (
-    <main>
-      <h1>Depth Chart</h1>
-      <p>Build a football team from any roster of characters.</p>
-      <p className="health" data-state={health}>
-        API: {health}
-      </p>
-    </main>
+    <>
+      <header className="site-header">
+        <h1>Depth Chart</h1>
+        <p className="list-name">{list.title}</p>
+      </header>
+      <main>
+        <Builder list={list} team={team} onChange={setTeam} />
+      </main>
+      {list.disclaimer && <footer className="disclaimer">{list.disclaimer}</footer>}
+    </>
   );
 }
