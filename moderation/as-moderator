@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Run a command as the moderator role. Static keys in the environment would take precedence
+# over the profile, so they're removed; the role's credentials come from ~/.aws (setup.sh).
+exec env -u AWS_ACCESS_KEY_ID -u AWS_SECRET_ACCESS_KEY -u AWS_SESSION_TOKEN \
+    -u MODERATOR_AWS_ACCESS_KEY_ID -u MODERATOR_AWS_SECRET_ACCESS_KEY \
+    AWS_PROFILE=moderator AWS_REGION=us-east-1 "$@"
