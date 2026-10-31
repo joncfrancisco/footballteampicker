@@ -6,6 +6,7 @@
  */
 import { CharacterList } from "@ftp/shared";
 import { createServer } from "node:http";
+import { readFile } from "node:fs/promises";
 import lol from "../../seed/league-of-legends/list.json";
 import { createApi } from "./app";
 import { TEST_SECRET, turnstile } from "./human";
@@ -24,6 +25,16 @@ const api = createApi({
 
 createServer(async (req, res) => {
   const url = new URL(req.url ?? "/", `http://${req.headers.host}`);
+
+  if (req.method === "GET" && url.pathname === `/m/seeds/${lol.id}/${lol.atlas.src}`) {
+    res.writeHead(200, {
+      "content-type": "image/webp",
+      "cache-control": "public,max-age=31536000,immutable",
+    });
+    return res.end(
+      await readFile(new URL(`../../seed/league-of-legends/${lol.atlas.src}`, import.meta.url)),
+    );
+  }
 
   if (req.method === "GET" && url.pathname.startsWith("/m/")) {
     const o = publish.objects.get(url.pathname.slice(1));

@@ -213,7 +213,7 @@ export function createApi(deps: Deps) {
         title: seed.title,
         version: 0,
         characters: seed.characters,
-        atlas: seed.atlas,
+        atlas: { ...seed.atlas, src: `/m/seeds/${seed.id}/${seed.atlas.src}` },
         disclaimer: seed.disclaimer,
       };
     const list = await deps.store.getList(id);

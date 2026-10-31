@@ -68,6 +68,24 @@ it exists, writes answer 503 `writes_unavailable` (fail closed).
   `m/t/<id>.json` (immutable), `m/l/<id>.json` and `m/browse/index.json` (`max-age=60`),
   and from #10 list atlases under `m/a/`. The API never invalidates: lists and browse catch up
   within a minute and teams never change. Takedowns invalidate from the admin script (#13).
+- Saved seed teams use `m/seeds/<seedId>/atlas-<hash>.webp`. Deploy uploads new seed atlases
+  without deleting old ones, so a saved team keeps its original portraits across seed updates.
+
+## Sharing configuration
+
+The production GitHub environment variable `TURNSTILE_SITE_KEY` is the public Cloudflare
+site key, embedded in the web build as `VITE_TURNSTILE_SITE_KEY`. The matching secret remains
+in the SecureString above. Without a site key the UI pauses sharing; without the secret the
+API rejects writes. Local development uses Cloudflare's public test keys only.
+
+The browser sends `X-Amz-Content-Sha256` for the exact UTF-8 JSON body on every write. Lambda
+function URL OAC needs this body hash before the request can reach the handler. Retries on
+429/503 render a fresh Turnstile widget, up to three retries with jittered backoff; consumed
+tokens are never replayed. An unchanged team reuses the last saved ID in this browser.
+
+Shared teams read `/m/t/<id>.json` and render their saved character snapshot, including names,
+two-way flags and atlas tiles. Formation/view changes stay local. Remix separately loads the
+current list, clears removed characters, and keeps offense when a two-way flag was disabled.
 
 ## Deploys (`.github/workflows/deploy.yml`)
 

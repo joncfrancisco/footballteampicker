@@ -31,9 +31,16 @@ import { useMedia } from "./useSize";
 
 const PACKAGES = { base: "Base", nickel: "Nickel", dime: "Dime" } as const;
 
-type Props = { list: LoadedList; team: Team; onChange: (team: Team) => void };
+type Props = {
+  list: LoadedList;
+  team: Team;
+  onChange: (team: Team) => void;
+  readOnly?: boolean;
+  initialView?: "field" | "depth";
+  children?: React.ReactNode;
+};
 
-export function Builder({ list, team, onChange }: Props) {
+export function Builder({ list, team, onChange, readOnly = false, initialView, children }: Props) {
   const [notice, setNotice] = useState("");
 
   useEffect(() => {
@@ -43,21 +50,24 @@ export function Builder({ list, team, onChange }: Props) {
   }, [notice]);
 
   return (
-    <Lineup list={list} team={team} onChange={onChange} onNotice={setNotice}>
+    <Lineup list={list} team={team} onChange={onChange} onNotice={setNotice} readOnly={readOnly}>
       <BuilderBody
         list={list}
         team={team}
         onChange={onChange}
         notice={notice}
         setNotice={setNotice}
+        readOnly={readOnly}
+        initialView={initialView}
+        children={children}
       />
     </Lineup>
   );
 }
 
 function BuilderBody(props: Props & { notice: string; setNotice: (s: string) => void }) {
-  const { list, team, onChange, notice, setNotice } = props;
-  const [view, setView] = useState<"field" | "depth">("field");
+  const { list, team, onChange, notice, setNotice, readOnly, children } = props;
+  const [view, setView] = useState<"field" | "depth">(props.initialView ?? "field");
   const [tab, setTab] = useState<"offense" | "defense">("offense");
   const facing = useMedia("(min-width: 1100px)");
   const bothPickers = facing || view === "depth";
@@ -92,14 +102,18 @@ function BuilderBody(props: Props & { notice: string; setNotice: (s: string) => 
   return (
     <section className="builder">
       <div className="team-meta">
-        <label className="team-title">
-          <span className="visually-hidden">Team name</span>
-          <input
-            value={team.title}
-            maxLength={80}
-            onChange={(e) => onChange({ ...team, title: e.target.value })}
-          />
-        </label>
+        {readOnly ? (
+          <h2 className="team-title">{team.title}</h2>
+        ) : (
+          <label className="team-title">
+            <span className="visually-hidden">Team name</span>
+            <input
+              value={team.title}
+              maxLength={80}
+              onChange={(e) => onChange({ ...team, title: e.target.value })}
+            />
+          </label>
+        )}
         <div className="view-toggle" role="group" aria-label="View">
           {(["field", "depth"] as const).map((v) => (
             <button key={v} type="button" aria-pressed={view === v} onClick={() => setView(v)}>
@@ -107,27 +121,34 @@ function BuilderBody(props: Props & { notice: string; setNotice: (s: string) => 
             </button>
           ))}
         </div>
-        <div className="section-toggles" role="group" aria-label="Optional sections">
-          {(["specialTeams", "staff"] as const).map((section) => (
-            <button
-              key={section}
-              type="button"
-              aria-pressed={team[section] !== undefined}
-              onClick={() => toggleSection(section)}
-            >
-              {team[section] !== undefined ? "✓ " : "+ "}
-              {section === "staff" ? "Staff" : "Special teams"}
-            </button>
-          ))}
-        </div>
-        <label>
-          Front{" "}
-          <select value={team.defense.front} onChange={(e) => setFront(e.target.value as Front)}>
-            {FRONTS.map((f) => (
-              <option key={f}>{f}</option>
-            ))}
-          </select>
-        </label>
+        {!readOnly && (
+          <>
+            <div className="section-toggles" role="group" aria-label="Optional sections">
+              {(["specialTeams", "staff"] as const).map((section) => (
+                <button
+                  key={section}
+                  type="button"
+                  aria-pressed={team[section] !== undefined}
+                  onClick={() => toggleSection(section)}
+                >
+                  {team[section] !== undefined ? "✓ " : "+ "}
+                  {section === "staff" ? "Staff" : "Special teams"}
+                </button>
+              ))}
+            </div>
+            <label>
+              Front{" "}
+              <select
+                value={team.defense.front}
+                onChange={(e) => setFront(e.target.value as Front)}
+              >
+                {FRONTS.map((f) => (
+                  <option key={f}>{f}</option>
+                ))}
+              </select>
+            </label>
+          </>
+        )}
       </div>
 
       <div className="builder-layout">
@@ -172,22 +193,25 @@ function BuilderBody(props: Props & { notice: string; setNotice: (s: string) => 
             )}
           </div>
 
-          <div className="actions" role="group" aria-label="Lineup actions">
-            <button type="button" onClick={() => onChange(autoFill(team, order))}>
-              Auto-fill depth
-            </button>
-            <button type="button" onClick={() => onChange(randomize(team, order))}>
-              Randomize
-            </button>
-            <button type="button" onClick={() => onChange(clearSide(team, "offense"))}>
-              Clear offense
-            </button>
-            <button type="button" onClick={() => onChange(clearSide(team, "defense"))}>
-              Clear defense
-            </button>
-          </div>
+          {!readOnly && (
+            <div className="actions" role="group" aria-label="Lineup actions">
+              <button type="button" onClick={() => onChange(autoFill(team, order))}>
+                Auto-fill depth
+              </button>
+              <button type="button" onClick={() => onChange(randomize(team, order))}>
+                Randomize
+              </button>
+              <button type="button" onClick={() => onChange(clearSide(team, "offense"))}>
+                Clear offense
+              </button>
+              <button type="button" onClick={() => onChange(clearSide(team, "defense"))}>
+                Clear defense
+              </button>
+            </div>
+          )}
 
           <ExportMenu list={list} team={team} />
+          {children}
 
           <StatusBar notice={notice} />
 
@@ -224,7 +248,7 @@ function BuilderBody(props: Props & { notice: string; setNotice: (s: string) => 
 
           {view === "field" && team.specialTeams && <SpecialTeamsPanel />}
         </div>
-        <Pool />
+        {!readOnly && <Pool />}
       </div>
     </section>
   );

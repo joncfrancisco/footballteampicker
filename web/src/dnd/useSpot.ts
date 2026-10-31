@@ -9,12 +9,12 @@ import { sameSpot, useLineup } from "./Lineup";
  * selection, or selects whoever is in it.
  */
 export function useSpot(spot: Spot) {
-  const { list, team, selected, activateSpot } = useLineup();
+  const { list, team, selected, activateSpot, readOnly } = useLineup();
   const id = spotId(spot);
   const charId = at(team, spot);
   const character = charId ? list.byId.get(charId) : undefined;
-  const drop = useDroppable({ id });
-  const drag = useDraggable({ id, disabled: !character });
+  const drop = useDroppable({ id, disabled: readOnly });
+  const drag = useDraggable({ id, disabled: readOnly || !character });
   const label = spotLabel(spot);
   const isSelected = selected?.kind === "spot" && sameSpot(selected.spot, spot);
 
@@ -32,9 +32,10 @@ export function useSpot(spot: Spot) {
     },
     buttonProps: {
       type: "button" as const,
+      disabled: readOnly,
       // An empty spot isn't draggable, but it's still a live button (tap to place), so it
       // mustn't pick up dnd-kit's aria-disabled / "draggable" description.
-      ...(character ? { ...drag.attributes, ...drag.listeners } : {}),
+      ...(character && !readOnly ? { ...drag.attributes, ...drag.listeners } : {}),
       "aria-label": character
         ? `${character.name}, ${sideName(spot.side)} ${label}`
         : `Empty ${sideName(spot.side)} ${label}`,

@@ -63,7 +63,10 @@ function SectionTile({ spot, title }: { spot: Spot; title?: string }) {
         <span className="section-empty" aria-hidden="true" />
       )}
       <span className="section-text">
-        <span className="section-name">{s.character?.name ?? "Open"}</span>
+        <span className="section-name">
+          {s.character?.name ?? "Open"}
+          {s.character?.twoWay && <span className="two-way-text"> 2W</span>}
+        </span>
         <span className="section-label">{s.label}</span>
       </span>
     </button>

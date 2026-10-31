@@ -107,6 +107,7 @@ function SlotTile(props: {
         </>
       ) : null}
       <span className="slot-label">{narrow ? ref : `${slot.label} · ${ref}`}</span>
+      {s.character?.twoWay && <span className="badge two-way">2W</span>}
     </button>
   );
 }

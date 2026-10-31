@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- reading published JSON in assertions */
-import { CharacterList, newTeam, place, setSection, type Team } from "@ftp/shared";
+import { CharacterList, PublishedTeam, newTeam, place, setSection, type Team } from "@ftp/shared";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import lol from "../../seed/league-of-legends/list.json";
 import { createApi, clientIp } from "./app";
@@ -124,6 +124,7 @@ describe("teams", () => {
       atlasIndex: expect.any(Number),
     });
     expect(saved.disclaimer).toMatch(/Riot/);
+    expect(PublishedTeam.parse(saved).atlas.src).toBe(`/m/seeds/demo-lol/${seed.atlas.src}`);
     expect(saved.staff.HC).toBe("Zed");
     expect(saved).not.toHaveProperty("specialTeams");
   });
