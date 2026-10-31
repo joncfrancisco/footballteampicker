@@ -23,6 +23,7 @@ import type { Event, Result } from "./types";
 import { InvalidUpload, type Media } from "./media";
 
 export type Deps = {
+  logRequest?: (record: { route: string; status: number; latencyMs: number }) => void;
   media?: Media;
   store: Store;
   publish: Publisher;
@@ -67,17 +68,32 @@ export function createApi(deps: Deps) {
   const now = () => (deps.now ?? (() => new Date()))().toISOString();
   const seeds = new Map(deps.seeds.map((l) => [l.id, l]));
 
-  const routes: [string, RegExp, (e: Event, m: RegExpMatchArray) => Promise<Result>][] = [
-    ["GET", /^\/api\/health$/, async () => json(200, { ok: true })],
-    ["POST", /^\/api\/lists$/, createList],
-    ["PUT", /^\/api\/lists\/([A-Za-z0-9]{10})$/, updateList],
-    ["DELETE", /^\/api\/lists\/([A-Za-z0-9]{10})$/, deleteList],
-    ["POST", /^\/api\/teams$/, createTeam],
-    ["POST", /^\/api\/reports$/, createReport],
-    ["POST", /^\/api\/uploads$/, createUpload],
+  const routes: [string, RegExp, (e: Event, m: RegExpMatchArray) => Promise<Result>, string][] = [
+    ["GET", /^\/api\/health$/, async () => json(200, { ok: true }), "GET /api/health"],
+    ["POST", /^\/api\/lists$/, createList, "POST /api/lists"],
+    ["PUT", /^\/api\/lists\/([A-Za-z0-9]{10})$/, updateList, "PUT /api/lists/:id"],
+    ["DELETE", /^\/api\/lists\/([A-Za-z0-9]{10})$/, deleteList, "DELETE /api/lists/:id"],
+    ["POST", /^\/api\/teams$/, createTeam, "POST /api/teams"],
+    ["POST", /^\/api\/reports$/, createReport, "POST /api/reports"],
+    ["POST", /^\/api\/uploads$/, createUpload, "POST /api/uploads"],
   ];
 
   async function handle(event: Event): Promise<Result> {
+    const started = performance.now();
+    const result = await dispatch(event);
+    deps.logRequest?.({
+      route:
+        routes.find(
+          ([method, pattern]) =>
+            method === event.requestContext.http.method && pattern.test(event.rawPath),
+        )?.[3] ?? "unmatched",
+      status: result.statusCode ?? 200,
+      latencyMs: Math.round((performance.now() - started) * 100) / 100,
+    });
+    return result;
+  }
+
+  async function dispatch(event: Event): Promise<Result> {
     const method = event.requestContext.http.method;
     const path = event.rawPath;
     try {
@@ -90,9 +106,7 @@ export function createApi(deps: Deps) {
       if (e instanceof HttpError) return json(e.status, e.body);
       if (e instanceof InvalidUpload)
         return json(422, { error: "invalid_upload", message: e.message });
-      console.error(
-        JSON.stringify({ msg: "unhandled", error: String(e), stack: (e as Error).stack }),
-      );
+      console.error(JSON.stringify({ msg: "unhandled", errorType: (e as Error).name ?? "Error" }));
       return json(500, { error: "internal" });
     }
   }
