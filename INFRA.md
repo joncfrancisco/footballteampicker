@@ -239,10 +239,24 @@ share 1 in 3 → open a team link → browse) and `loadtest/burst.js` (100 full 
 teams and staff in one second), run in a load-test window (DEPLOY.md). Both post the teams in
 `loadtest/teams.json`, which `api/src/loadtest.test.ts` keeps valid against the shared rules.
 
-**Results:** not yet run against production. A local rehearsal on 2026-10-31 passed both
-scripts (burst 100/100 with no retries, flow 100% checks, no 5xx). Record the production
-numbers here: 5xx count, API p95, CloudFront p95 TTFB, Lambda throttles, kill-switch state,
-burst retries, and Free plan usage before and after.
+**Results (production, 2026-10-31, server side from CloudWatch):**
+
+| Run   | Requests             | Writes stored  | 5xx | Lambda p95 (per minute) | Throttles | Peak concurrency |
+| ----- | -------------------- | -------------- | --- | ----------------------- | --------- | ---------------- |
+| flow  | ~5,300 over 10.5 min | ~310 (~30/min) | 0   | 102–252 ms              | 0         | 2                |
+| burst | 279 in one minute    | 100 of 100     | 0   | 1,220 ms                | 178       | 25 (the cap)     |
+
+- The flow's ~37% CloudFront 4xx rate is expected: the browse index 404s until the first public
+  list is saved, and each iteration fetches it twice.
+- The burst does not drain in ~1 s as the sizing table assumes. 178 attempts were throttled and
+  returned to the client as 429 (4xx, not 5xx), and the share retry absorbed every one: all 100
+  teams were stored (400 WRU at 4 WRU each).
+- The throttles alarm stayed OK as designed (it needs throttling in three five-minute periods),
+  as did the other alarms. The kill switch did not trip and reserved concurrency stayed at 25.
+- Published load-test teams stay in `m/t/` (unlisted, reachable only by id).
+
+Still to record from the k6 summaries: checks rate, API p95 as the client saw it, static p95
+TTFB and burst retry max. Also record Free plan usage before and after.
 
 ## Backups and recovery
 
