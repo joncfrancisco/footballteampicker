@@ -1,4 +1,5 @@
 import { readFile } from "node:fs/promises";
+import { SPORTS } from "@ftp/shared";
 import { expect, test } from "@playwright/test";
 
 const EXPECTED = {
@@ -64,3 +65,47 @@ test("Download PNG saves a PNG of the chosen layout", async ({ page }) => {
   expect(png.readUInt32BE(16)).toBe(1080); // IHDR width
   expect(png.readUInt32BE(20)).toBeGreaterThan(1350); // IHDR height
 });
+
+/** Every other sport (#44): both layouts render at size with every portrait drawn. */
+for (const sport of SPORTS.filter((s) => s.id !== "football")) {
+  const situational = sport.sections.find((s) => s.kind === "situational");
+  const spots = (rows: Readonly<Record<string, number>>) =>
+    Object.values(rows).reduce((n, r) => n + r, 0);
+  const staff = spots(sport.sections.find((s) => s.kind === "staff")!.rows);
+  const shown = sport.units.find((u) => u.defaultFormation)!;
+  const formation = sport.formations.find(
+    (f) => f.id === Object.values(shown.defaultFormation!)[0],
+  )!;
+  const field = formation.slots.length + staff + (situational ? spots(situational.rows) : 0);
+  const depth =
+    sport.units.reduce((n, u) => n + spots(u.variants[0]!.rows), 0) +
+    sport.sections.reduce((n, s) => n + spots(s.rows), 0) +
+    sport.units.flatMap((u) => Object.values(u.battingOrder ?? {})[0] ?? []).length;
+
+  for (const [layout, portraits] of [
+    ["field", field],
+    ["depth", depth],
+  ] as const)
+    test(`${sport.id} ${layout} export: every portrait drawn`, async ({ page }) => {
+      await page.goto("/build/demo-lol");
+      const got = await page.evaluate(
+        async ({ layout, sport }) => {
+          const load = (path: string) => import(/* @vite-ignore */ path);
+          const { SEED_LISTS } = await load("/src/lists.ts");
+          const { demoTeam } = await load("/src/demo.ts");
+          const { renderTeam } = await load("/src/export/render.ts");
+          const list = SEED_LISTS[0];
+          const { canvas, portraits } = await renderTeam(
+            demoTeam(list, { sections: true, sport }),
+            list,
+            layout,
+          );
+          return { width: canvas.width, height: canvas.height, portraits: portraits.length };
+        },
+        { layout, sport: sport.id },
+      );
+      expect(got.width).toBe(1080);
+      expect(got.height).toBeGreaterThanOrEqual(1350);
+      expect(got.portraits).toBe(portraits);
+    });
+}

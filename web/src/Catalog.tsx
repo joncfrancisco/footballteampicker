@@ -5,6 +5,7 @@ import { ownedListIds } from "./ownership";
 import { Sprite } from "./Sprite";
 import { useResource } from "./useResource";
 import { ShareLink } from "./ShareMenu";
+import { SportPicker, setUrlSport, sportQuery, urlSport } from "./SportPicker";
 
 export const normalizeSearch = (value: string) =>
   value
@@ -18,6 +19,7 @@ export function Catalog({ browse = false }: { browse?: boolean }) {
   const { value, error, retry } = useResource(fetchBrowse);
   const [query, setQuery] = useState(new URLSearchParams(location.search).get("q") ?? "");
   const [sort, setSort] = useState("recent");
+  const [sport, setSport] = useState(urlSport);
   const seeds = SEED_LISTS.map(summarize);
   const publicLists = (value ?? []).filter((l) => !seeds.some((s) => s.id === l.id));
   const search = normalizeSearch(query);
@@ -48,7 +50,17 @@ export function Catalog({ browse = false }: { browse?: boolean }) {
   return (
     <section className="catalog">
       <h2>{browse ? "Browse character lists" : "Pick a game. Build your team."}</h2>
-      <p>Turn your favorite characters into a football depth chart, then export your lineup.</p>
+      <p>
+        Turn your favorite characters into a depth chart for football, soccer, basketball, hockey or
+        baseball, then export your lineup.
+      </p>
+      <SportPicker
+        value={sport}
+        onChange={(next) => {
+          setSport(next);
+          setUrlSport(next);
+        }}
+      />
       <form action="/browse" role="search" className="catalog-search">
         <label htmlFor="game-search">Pick a game</label>
         <input
@@ -82,7 +94,7 @@ export function Catalog({ browse = false }: { browse?: boolean }) {
         <>
           <h3>Character lists</h3>
           {matches.length ? (
-            <Cards lists={matches} />
+            <Cards lists={matches} sport={sport} />
           ) : (
             <p>No lists match “{query}”. Try another game or create a list.</p>
           )}
@@ -90,10 +102,10 @@ export function Catalog({ browse = false }: { browse?: boolean }) {
       ) : (
         <>
           <h3>Featured lists</h3>
-          <Cards lists={seeds} />
+          <Cards lists={seeds} sport={sport} />
           <h3>Recent public lists</h3>
           {publicLists.length ? (
-            <Cards lists={publicLists.slice(0, 12)} />
+            <Cards lists={publicLists.slice(0, 12)} sport={sport} />
           ) : (
             value && <p>No community lists yet. Yours could be the first.</p>
           )}
@@ -105,12 +117,12 @@ export function Catalog({ browse = false }: { browse?: boolean }) {
   );
 }
 
-function Cards({ lists }: { lists: ListSummary[] }) {
+function Cards({ lists, sport }: { lists: ListSummary[]; sport: string }) {
   return (
     <div className="list-cards">
       {lists.map((list) => (
         <article key={list.id} className="list-card">
-          <a href={`/l/${list.id}`}>
+          <a href={`/l/${list.id}${sportQuery(sport)}`}>
             <div className="list-cover" aria-hidden="true">
               {list.cover.map((index, i) => (
                 <Sprite
@@ -191,7 +203,7 @@ export function ListPage({
       </p>
       <p>{list.description}</p>
       <div className="actions">
-        <a className="button-link" href={`/build/${list.id}`}>
+        <a className="button-link" href={`/build/${list.id}${sportQuery(urlSport())}`}>
           Build a team
         </a>
         <a href={`/new?remix=${list.id}`}>Remix list</a>
