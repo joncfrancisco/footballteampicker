@@ -197,10 +197,54 @@ const PITCH: SurfaceDef = {
   panes: wholePanes(1, { yMin: 14, yMax: 100 }),
 };
 
+// ---- Court -----------------------------------------------------------------------------
+
+/** Basketball's offensive half court: 50 ft across, 47 ft deep, basket at the top. */
+const COURT_ASPECT = 47 / 50;
+const fx = (ft: number) => (ft / 50) * 100;
+const fy = (ft: number) => (ft / 47) * 100;
+const BASELINE = 1;
+const HOOP = BASELINE + fy(5.25);
+/** Where the three-point arc meets the straight corner lines, in degrees. */
+const CORNER = (Math.acos(fx(22) / fx(23.75)) * 180) / Math.PI;
+
+const COURT: SurfaceDef = {
+  id: "court",
+  noun: "Court",
+  aspect: COURT_ASPECT,
+  background: "var(--court)",
+  paint: {
+    bg: "#b9814f",
+    line: "rgba(255,255,255,0.8)",
+    fill: "rgba(120,40,20,0.35)",
+    accent: "#fff",
+  },
+  marks: () => {
+    const arcY = HOOP + (fx(23.75) / COURT_ASPECT) * Math.sin((CORNER * Math.PI) / 180);
+    return [
+      { kind: "rect", x: 1, y: BASELINE, w: 98, h: 99 - BASELINE },
+      { kind: "rect", x: 50 - fx(8), y: BASELINE, w: fx(16), h: fy(19), fill: true },
+      { kind: "rect", x: 50 - fx(8), y: BASELINE, w: fx(16), h: fy(19) },
+      { kind: "circle", cx: 50, cy: BASELINE + fy(19), r: fx(6) },
+      { kind: "line", x1: 50 - fx(3), y1: BASELINE + fy(4), x2: 50 + fx(3), y2: BASELINE + fy(4) },
+      { kind: "circle", cx: 50, cy: HOOP, r: fx(0.75) },
+      { kind: "arc", cx: 50, cy: HOOP, r: fx(4), from: 0, to: 180 },
+      // Three-point line: straight in the corners, then the arc.
+      { kind: "line", x1: 50 - fx(22), y1: BASELINE, x2: 50 - fx(22), y2: arcY },
+      { kind: "line", x1: 50 + fx(22), y1: BASELINE, x2: 50 + fx(22), y2: arcY },
+      { kind: "arc", cx: 50, cy: HOOP, r: fx(23.75), from: CORNER, to: 180 - CORNER },
+      // Half-court line and the centre circle's half.
+      { kind: "arc", cx: 50, cy: 99, r: fx(6), from: 180, to: 360 },
+    ];
+  },
+  height: aspectHeight(COURT_ASPECT),
+  panes: wholePanes(1),
+};
+
 export const SURFACES: Record<SurfaceId, SurfaceDef | undefined> = {
   gridiron: GRIDIRON,
   pitch: PITCH,
-  court: undefined,
+  court: COURT,
   rink: undefined,
   diamond: undefined,
 };
