@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { autoFill, randomize, shapeErrors, setSection, violations } from "../lineup";
+import { autoFill, place, randomize, shapeErrors, setSection, violations } from "../lineup";
 import { refLabel } from "../formations";
 import { unitDef, unitFormations, unitRows } from "../sport";
 import { newTeam } from "../team";
@@ -81,5 +81,49 @@ describe.each(SPORTS.map((s) => [s.id, s] as const))("%s", (_id, sport) => {
     team = autoFill(team, ids);
     expect(violations(team, roster)).toEqual([]);
     expect(violations(randomize(team, ids), roster)).toEqual([]);
+  });
+});
+
+describe("hockey special teams (#64)", () => {
+  const roster = new Map([
+    ["g", { name: "Goalie", twoWay: false }],
+    ["f", { name: "Forward", twoWay: false }],
+  ]);
+  const base = () =>
+    setSection(
+      setSection(newTeam({ id: "l", ip: "X" }, "hockey"), "powerPlay", true),
+      "penaltyKill",
+      true,
+    );
+
+  it("keeps goalies off the power play and penalty kill, either way round", () => {
+    let t = place(base(), roster, "g", { side: "lineup", pos: "G", index: 0 });
+    expect(t.ok && place(t.team, roster, "g", { side: "powerPlay", pos: "PP1", index: 0 })).toEqual(
+      {
+        ok: false,
+        reason: "Goalie is a goalie and can't play power play",
+      },
+    );
+    t = place(base(), roster, "f", { side: "penaltyKill", pos: "PK2", index: 3 });
+    expect(t.ok && place(t.team, roster, "f", { side: "lineup", pos: "G", index: 1 }).ok).toBe(
+      false,
+    );
+  });
+
+  it("lets a skater play a line, the power play and the penalty kill", () => {
+    let t = base();
+    for (const spot of [
+      { side: "lineup", pos: "C", index: 0 },
+      { side: "powerPlay", pos: "PP1", index: 2 },
+      { side: "penaltyKill", pos: "PK1", index: 0 },
+    ]) {
+      const r = place(t, roster, "f", spot);
+      if (!r.ok) throw new Error(r.reason);
+      t = r.team;
+    }
+    expect(violations(t, roster)).toEqual([]);
+    // A second power-play spot is a move within the power play.
+    const r = place(t, roster, "f", { side: "powerPlay", pos: "PP2", index: 0 });
+    expect(r.ok && r.team.sections!.powerPlay!.PP1![2]).toBeNull();
   });
 });

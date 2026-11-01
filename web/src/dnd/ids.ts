@@ -1,4 +1,4 @@
-import { sectionDef, type SportDef, type Spot } from "@ftp/shared";
+import { refLabel, sectionDef, type SportDef, type Spot } from "@ftp/shared";
 
 /** dnd-kit ids for depth spots: "spot:offense:WR:3" (index is 0-based). */
 export function spotId(spot: Spot): string {
@@ -27,5 +27,5 @@ export const POOL_DROP = "pool-drop";
 /** "WR4" for a spot; staff and other named one-deep roles are just the role ("HC", "PEN"). */
 export function spotLabel(spot: Spot, sport?: SportDef): string {
   const named = spot.side === "staff" || !!(sport && sectionDef(sport, spot.side)?.titles);
-  return named ? spot.pos : `${spot.pos}${spot.index + 1}`;
+  return named ? spot.pos : refLabel({ pos: spot.pos, depth: spot.index + 1 });
 }

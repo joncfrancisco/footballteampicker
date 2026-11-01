@@ -18,7 +18,7 @@ export function arcPath(m: Extract<Mark, { kind: "arc" }>, { sx, sy }: Scale): s
   return `M ${at(m.from)} A ${m.r} ${ry} 0 ${sweep > 180 ? 1 : 0} 1 ${at(m.to)}`;
 }
 
-export type Colors = { line: string; fill: string; accent: string };
+export type Colors = { line: string; fill: string; accent: string; alt?: string };
 
 /** Paint marks onto a canvas area showing surface rows yMin–yMax. */
 export function paintMarks(
@@ -39,7 +39,8 @@ export function paintMarks(
   for (const m of marks) {
     ctx.beginPath();
     ctx.lineWidth = m.kind === "line" && m.accent ? 3 : 1.5;
-    ctx.strokeStyle = m.kind === "line" && m.accent ? colors.accent : colors.line;
+    ctx.strokeStyle =
+      m.kind === "line" && m.accent ? (m.alt && colors.alt) || colors.accent : colors.line;
     ctx.fillStyle = colors.fill;
     if (m.kind === "line") {
       ctx.moveTo(X(m.x1), Y(m.y1));

@@ -9,6 +9,7 @@
   --accent: #1f6feb;
   --turf: #2f7a3e;
   --court: #b9814f;
+  --ice: #eef3f6;
   --turf-line: rgb(255 255 255 / 0.55);
   --los: #5aa9ff;
   --slot-empty: rgb(255 255 255 / 0.14);
@@ -26,6 +27,7 @@
     --accent: #6ea8ff;
     --turf: #22582d;
     --court: #8a5f3a;
+    --ice: #c9d4db;
     --slot-filled: #0b2213;
   }
 }
@@ -184,6 +186,36 @@ button[aria-pressed="true"]:not(.slot, .depth-cell, .section-tile),
 .field-lines .accent {
   stroke: var(--los);
   stroke-width: 3;
+}
+
+/* Surfaces paint their own colours over the gridiron defaults (#44). */
+.surface-court .field-lines .mark {
+  stroke: rgb(255 255 255 / 0.8);
+}
+
+.surface-rink .field-lines .mark {
+  stroke: rgb(200 40 40 / 0.7);
+}
+
+.surface-rink .field-lines .mark-fill {
+  fill: rgb(200 40 40 / 0.8);
+}
+
+.surface-rink .field-lines .accent {
+  stroke: #c62828;
+}
+
+.surface-rink .field-lines .accent.alt {
+  stroke: #1e5bb8;
+}
+
+.surface-rink .slot {
+  border-color: rgb(16 51 27 / 0.6);
+}
+
+.surface-rink .slot:not(.filled) {
+  background: rgb(16 51 27 / 0.12);
+  color: #10331b;
 }
 
 .slot {

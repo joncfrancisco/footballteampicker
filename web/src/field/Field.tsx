@@ -129,7 +129,7 @@ function Markings({ surface, pane, scale }: { surface: SurfaceDef; pane: Pane; s
       {surface.marks(pane).map((m, i) => {
         const cls =
           m.kind === "line" && m.accent
-            ? "mark accent"
+            ? `mark accent${m.alt ? " alt" : ""}`
             : "fill" in m && m.fill
               ? "mark-fill"
               : "mark";
