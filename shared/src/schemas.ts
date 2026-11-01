@@ -56,6 +56,11 @@ export const TeamV2Input = z
               .regex(/^[A-Za-z0-9-]{1,16}$/)
               .optional(),
             align: z.enum(["under", "gun"]).optional(),
+            // Batting order spot ids (#65); teamErrors checks them against the unit (#75).
+            order: z
+              .array(z.string().regex(/^[A-Za-z0-9-]{1,16}$/))
+              .max(16)
+              .optional(),
           })
           .strict(),
       )

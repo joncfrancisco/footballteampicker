@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { place, setSection } from "./lineup";
+import { moveInOrder, place, setSection } from "./lineup";
 import { ListInput, TeamInput, teamErrors } from "./schemas";
 import { newTeam, type Team } from "./team";
 
@@ -64,6 +64,17 @@ describe("TeamInput + teamErrors", () => {
     if (!r.ok) throw new Error(r.reason);
     t = r.team;
     expect(teamErrors(parsed(t), roster)).toEqual([]);
+  });
+
+  it("accepts a baseball team with a moved batting order (#75)", () => {
+    const t = moveInOrder(newTeam({ id: "demo-lol", ip: "X" }, "baseball"), "hitters", "C", -1);
+    expect(t.units.hitters!.order).toEqual(["CF", "SS", "1B", "DH", "3B", "RF", "LF", "C", "2B"]);
+    const back = parsed(JSON.parse(JSON.stringify(t)));
+    expect(back.units.hitters!.order).toEqual(t.units.hitters!.order);
+    expect(teamErrors(back, roster)).toEqual([]);
+    const bad = structuredClone(t);
+    bad.units.hitters!.order = ["../x"];
+    expect(TeamInput.safeParse(bad).success).toBe(false);
   });
 
   it("strips control characters and caps the title", () => {
