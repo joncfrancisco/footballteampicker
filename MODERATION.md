@@ -1,6 +1,7 @@
 # Moderation
 
-Public rules and the copyright/takedown contact are on `/about`. User-uploaded fan art of
+Public rules are on `/about`. Copyright/DMCA requests and appeals come in through Report
+(no public email); the agent escalates them to Jon. User-uploaded fan art of
 third-party characters is expected; takedown requests are honored within days. There are no
 ads, paywalls, or donations. The League of Legends seed and its remixes retain Riot's notice.
 

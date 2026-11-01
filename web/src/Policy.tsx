@@ -27,11 +27,9 @@ export function About() {
         Repeated reports from the same network count once while a report is open.
       </p>
       <p>
-        For urgent issues, copyright/DMCA requests, or an appeal,{" "}
-        <a href="mailto:joncfrancisco@gmail.com?subject=Depth%20Chart%20takedown">
-          contact the site owner
-        </a>
-        . Include the list or team link and enough detail to identify the content and your request.
+        For copyright/DMCA requests or an appeal, use Report on the list or team and say so at the
+        start of the description. Include enough detail to identify the content and your request.
+        These go to the site owner for a decision.
       </p>
       <h3>League of Legends assets</h3>
       <p>
@@ -105,7 +103,7 @@ export function ReportPage() {
             onClick={() => {
               setError("");
               if (!siteKey) {
-                setError("Reporting is temporarily unavailable. Please contact the site owner.");
+                setError("Reporting is temporarily unavailable. Please try again later.");
                 return;
               }
               consumed.current = false;
@@ -130,10 +128,7 @@ export function ReportPage() {
         </>
       )}
       <p>
-        <a href={`/${type === "list" ? "l" : "t"}/${id}`}>Return to the {type}</a> ·{" "}
-        <a href="mailto:joncfrancisco@gmail.com?subject=Depth%20Chart%20report">
-          Contact the site owner
-        </a>
+        <a href={`/${type === "list" ? "l" : "t"}/${id}`}>Return to the {type}</a>
       </p>
     </section>
   );
