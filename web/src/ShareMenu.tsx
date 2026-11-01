@@ -1,5 +1,6 @@
 import type { Team } from "@ftp/shared";
 import { useEffect, useRef, useState } from "react";
+import { draftKey } from "./draft";
 import type { LoadedList } from "./lists";
 import { siteKey, Turnstile } from "./Turnstile";
 import { writeJson, WriteError } from "./write";
@@ -60,13 +61,12 @@ export function ShareMenu({ team, list }: { team: Team; list: LoadedList }) {
     };
   }, []);
   const body = { ...team, listVersion: list.version };
+  const sharedKey = draftKey(list.id, team.sport).replace("ftp:draft:", "ftp:shared:");
   const key = JSON.stringify(body);
   function begin() {
     if (saved?.key === key) return;
     try {
-      const previous = JSON.parse(
-        localStorage.getItem(`ftp:shared:${list.id}`) ?? "null",
-      ) as typeof saved;
+      const previous = JSON.parse(localStorage.getItem(sharedKey) ?? "null") as typeof saved;
       if (previous?.key === key && /^[A-Za-z0-9]{10}$/.test(previous.id)) {
         setSaved(previous);
         return;
@@ -92,7 +92,7 @@ export function ShareMenu({ team, list }: { team: Team; list: LoadedList }) {
       const next = { key: current.key, id: result.id };
       setSaved(next);
       try {
-        localStorage.setItem(`ftp:shared:${list.id}`, JSON.stringify(next));
+        localStorage.setItem(sharedKey, JSON.stringify(next));
       } catch {
         /* Link remains visible. */
       }
