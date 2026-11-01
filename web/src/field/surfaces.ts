@@ -18,7 +18,16 @@ import { SCALE, VIEW } from "./views";
 
 /** Surface markings in surface units. Circle radii are in x units and stay round. */
 export type Mark =
-  | { kind: "line"; x1: number; y1: number; x2: number; y2: number; accent?: boolean }
+  /** Accent lines are thick: the line of scrimmage, a rink's red line (blue lines are `alt`). */
+  | {
+      kind: "line";
+      x1: number;
+      y1: number;
+      x2: number;
+      y2: number;
+      accent?: boolean;
+      alt?: boolean;
+    }
   | { kind: "rect"; x: number; y: number; w: number; h: number; fill?: boolean }
   | { kind: "circle"; cx: number; cy: number; r: number; fill?: boolean }
   /** Part of a circle, angles in degrees clockwise from +x (so 90 points down the surface). */
@@ -45,7 +54,7 @@ export type SurfaceDef = {
   aspect?: number;
   /** CSS background on screen, and the colours the PNG export paints with. */
   background: string;
-  paint: { bg: string; line: string; fill: string; accent: string };
+  paint: { bg: string; line: string; fill: string; accent: string; alt?: string; ink?: string };
   marks(pane: { yMin: number; yMax: number }): Mark[];
   /** Pixel height of a pane `width` wide. */
   height(pane: Pane, width: number, narrow: boolean): number;
@@ -241,11 +250,52 @@ const COURT: SurfaceDef = {
   panes: wholePanes(1),
 };
 
+// ---- Rink ------------------------------------------------------------------------------
+
+/** Hockey: the team's half of a 200 × 85 ft rink, centre line at the top, own net below. */
+const RINK_ASPECT = 100 / 85;
+const rx = (ft: number) => (ft / 85) * 100;
+const GOAL_LINE = 89;
+
+const RINK: SurfaceDef = {
+  id: "rink",
+  noun: "Rink",
+  aspect: RINK_ASPECT,
+  background: "var(--ice)",
+  paint: {
+    bg: "#eef3f6",
+    line: "rgba(200,40,40,0.75)",
+    fill: "rgba(80,140,220,0.25)",
+    accent: "#c62828",
+    alt: "#1e5bb8",
+    ink: "#10331b",
+  },
+  marks: () => {
+    const zone = [50 - rx(22), 50 + rx(22)];
+    return [
+      { kind: "rect", x: 1, y: 0, w: 98, h: 99 },
+      { kind: "line", x1: 1, y1: 1, x2: 99, y2: 1, accent: true },
+      { kind: "arc", cx: 50, cy: 1, r: rx(15), from: 0, to: 180 },
+      { kind: "line", x1: 1, y1: 25, x2: 99, y2: 25, accent: true, alt: true },
+      ...zone.map((x): Mark => ({ kind: "circle", cx: x, cy: 30, r: 0.8, fill: true })),
+      ...zone.flatMap((x): Mark[] => [
+        { kind: "circle", cx: x, cy: GOAL_LINE - 20, r: rx(15) },
+        { kind: "circle", cx: x, cy: GOAL_LINE - 20, r: 0.8, fill: true },
+      ]),
+      { kind: "line", x1: 2, y1: GOAL_LINE, x2: 98, y2: GOAL_LINE },
+      { kind: "arc", cx: 50, cy: GOAL_LINE, r: rx(6), from: 180, to: 360 },
+      { kind: "rect", x: 50 - rx(3), y: GOAL_LINE, w: rx(6), h: 3 },
+    ];
+  },
+  height: aspectHeight(RINK_ASPECT),
+  panes: wholePanes(1),
+};
+
 export const SURFACES: Record<SurfaceId, SurfaceDef | undefined> = {
   gridiron: GRIDIRON,
   pitch: PITCH,
   court: COURT,
-  rink: undefined,
+  rink: RINK,
   diamond: undefined,
 };
 

@@ -1,10 +1,11 @@
 import type { SportDef } from "../sport";
 import { BASKETBALL } from "./basketball";
 import { FOOTBALL } from "./football";
+import { HOCKEY } from "./hockey";
 import { SOCCER } from "./soccer";
 
 /** Every sport the builder offers, in picker order. Football is the default. */
-export const SPORTS: readonly SportDef[] = [FOOTBALL, SOCCER, BASKETBALL];
+export const SPORTS: readonly SportDef[] = [FOOTBALL, SOCCER, BASKETBALL, HOCKEY];
 export const SPORT_IDS = SPORTS.map((s) => s.id) as [string, ...string[]];
 export const DEFAULT_SPORT = "football";
 
@@ -19,4 +20,4 @@ export function sportOf(team: { sport: string }): SportDef {
   return sport;
 }
 
-export { BASKETBALL, FOOTBALL, SOCCER };
+export { BASKETBALL, FOOTBALL, HOCKEY, SOCCER };

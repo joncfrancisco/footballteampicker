@@ -2,6 +2,7 @@ import {
   SPORTS,
   at,
   formationLabel,
+  refLabel,
   sportOf,
   unitRows,
   type SectionDef,
@@ -315,18 +316,26 @@ class Drawer {
           h: tile.height,
         },
         c,
-        `${slot.label} · ${slot.ref.pos}${slot.ref.depth}`,
+        `${slot.label} · ${refLabel(slot.ref)}`,
         tile.sprite,
+        surface.paint.ink,
       );
     }
   }
 
-  private fieldTile(r: Rect, c: Character | undefined, label: string, sprite: number) {
+  /** `ink` colours an empty tile's border and label on a light surface (the rink). */
+  private fieldTile(
+    r: Rect,
+    c: Character | undefined,
+    label: string,
+    sprite: number,
+    ink?: string,
+  ) {
     const ctx = this.ctx;
     roundRect(ctx, r, 8);
-    ctx.fillStyle = c ? C.tile : C.tileEmpty;
+    ctx.fillStyle = c ? C.tile : ink ? "rgba(16,51,27,0.12)" : C.tileEmpty;
     ctx.fill();
-    ctx.strokeStyle = "rgba(255,255,255,0.75)";
+    ctx.strokeStyle = !c && ink ? ink : "rgba(255,255,255,0.75)";
     ctx.lineWidth = 1.5;
     if (!c) ctx.setLineDash([5, 4]);
     ctx.stroke();
@@ -341,6 +350,7 @@ class Drawer {
       ctx.fillText(fit(ctx, c.name, r.w - 6), cx, r.y + sprite + 5 + Math.round(sprite / 4));
       if (c.twoWay) this.badge(r.x + 3, r.y + 3);
     }
+    if (!c && ink) ctx.fillStyle = ink;
     ctx.font = `700 ${Math.round(sprite / 5)}px ${FONT}`;
     ctx.fillText(fit(ctx, label, r.w - 6), cx, r.y + r.h - 6);
     ctx.textAlign = "left";

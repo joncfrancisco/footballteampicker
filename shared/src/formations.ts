@@ -368,7 +368,7 @@ export function slotsFor(f: Formation, qb: string | undefined): Slot[] {
   return f.slots.map((slot) => ({ ...slot, ...f.altQb!.moves[slot.id] }));
 }
 
-/** "WR3" for { pos: "WR", depth: 3 }. */
+/** "WR3" for { pos: "WR", depth: 3 }; a dash after rows ending in a digit ("PP1-3", "1B-1"). */
 export function refLabel(ref: DepthRef): string {
-  return `${ref.pos}${ref.depth}`;
+  return `${ref.pos}${/\d$/.test(ref.pos) ? "-" : ""}${ref.depth}`;
 }
