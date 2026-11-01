@@ -3,7 +3,7 @@ resource "aws_sns_topic" "alerts" {
 }
 
 variable "alert_email" {
-  description = "Owner email for moderation and operational alerts; subscription must be confirmed."
+  description = "Owner email for operational alerts; subscription must be confirmed."
   type        = string
   default     = "joncfrancisco@gmail.com"
 }

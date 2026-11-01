@@ -6,7 +6,6 @@ import { S3Publisher } from "./publish";
 import { DynamoStore } from "./store";
 import type { Event, Result } from "./types";
 import { Media, S3Media } from "./media";
-import { reportNotifier } from "./notifications";
 
 export type { Event, Result };
 
@@ -32,7 +31,6 @@ export async function handler(event: Event): Promise<Result> {
       }),
       seeds: [CharacterList.parse(lol)],
       reporterSalt: ssmSecret("/footballteampicker/ip-salt"),
-      notifyReport: reportNotifier(env("ALERTS_TOPIC"), env("SITE_HOSTNAME")),
       logRequest: (record) => console.info(JSON.stringify(record)),
       // Set only while Terraform's loadtest_mode is on (#18).
       ...(process.env.LOADTEST_TOKEN_PARAM
