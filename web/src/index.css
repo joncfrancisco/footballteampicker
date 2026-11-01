@@ -1040,3 +1040,32 @@ a {
   font-size: 0.8rem;
   font-weight: 600;
 }
+
+.batting-order ol {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.batting-order li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.batting-order .section-tile {
+  flex: 1;
+}
+
+.order-number {
+  width: 1.5em;
+  font-weight: 700;
+  text-align: right;
+}
+
+.order-moves {
+  display: flex;
+  gap: 4px;
+}

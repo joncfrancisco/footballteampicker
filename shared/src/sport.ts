@@ -1,4 +1,4 @@
-import type { Formation } from "./formations";
+import type { DepthRef, Formation } from "./formations";
 
 /**
  * A sport is data (#44): the units that make up its depth chart, the formations that view
@@ -24,7 +24,14 @@ export type UnitDef = {
   variantMap?: Readonly<Record<string, Readonly<Record<string, Readonly<Record<string, string>>>>>>;
   /** Default formation per variant id; units without formations are depth-chart only. */
   defaultFormation?: Readonly<Record<string, string>>;
+  /**
+   * An ordering of some spots, per variant (baseball's batting order), in its default order.
+   * Teams store the ids in their order; a `ref.unit` reaches another unit (the pitcher).
+   */
+  battingOrder?: Readonly<Record<string, readonly OrderSpot[]>>;
 };
+
+export type OrderSpot = { id: string; label: string; ref: DepthRef };
 
 export type SectionDef = {
   id: string;
@@ -85,4 +92,15 @@ export function unitFormations(sport: SportDef, unit: string, variant?: string):
 
 export function findFormation(sport: SportDef, id: string | undefined): Formation | undefined {
   return id === undefined ? undefined : sport.formations.find((f) => f.id === id);
+}
+
+/** A unit's batting order spots for a variant, in the team's order (or the default). */
+export function orderSpots(
+  unit: UnitDef,
+  variant?: string,
+  order?: readonly string[],
+): OrderSpot[] {
+  const spots = unit.battingOrder?.[variant ?? unit.variants[0]!.id] ?? [];
+  if (!order) return [...spots];
+  return order.flatMap((id) => spots.filter((s) => s.id === id));
 }

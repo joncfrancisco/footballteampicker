@@ -24,6 +24,7 @@ import { Field } from "./field/Field";
 import { surfaceOf } from "./field/surfaces";
 import type { LoadedList } from "./lists";
 import { Pool } from "./pool/Pool";
+import { BattingOrder } from "./sections/BattingOrder";
 import { SectionPanel, StaffStrip } from "./sections/Sections";
 import { useMedia } from "./useSize";
 
@@ -269,6 +270,12 @@ function BuilderBody(props: Props & { notice: string; setNotice: (s: string) => 
 
           {view === "field" &&
             situational.map((section) => <SectionPanel key={section.id} section={section} />)}
+
+          {sport.units
+            .filter((u) => u.battingOrder)
+            .map((u) => (
+              <BattingOrder key={u.id} unit={u} onChange={onChange} />
+            ))}
         </div>
         {!readOnly && <Pool />}
       </div>

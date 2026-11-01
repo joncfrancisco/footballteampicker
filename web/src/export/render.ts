@@ -2,6 +2,7 @@ import {
   SPORTS,
   at,
   formationLabel,
+  orderSpots,
   refLabel,
   sportOf,
   unitRows,
@@ -211,8 +212,14 @@ class Drawer {
     }
     for (const s of on("situational"))
       sections.push({ title: s.name, side: s.id, rows: Object.entries(s.rows) });
+    const order = sport.units.find((u) => u.battingOrder);
 
-    const body = sections.reduce((h, s) => h + 40 + s.rows.length * ROW + 20, 0);
+    const batting = order
+      ? orderSpots(order, team.units[order.id]!.variant, team.units[order.id]!.order)
+      : [];
+    const body =
+      sections.reduce((h, s) => h + 40 + s.rows.length * ROW + 20, 0) +
+      (batting.length ? 40 + Math.ceil(batting.length / 3) * ROW + 20 : 0);
     const H = Math.max(1350, HEADER_H + body + FOOTER_H);
     this.begin(W, H);
     let y = this.header(team, "Depth chart", W);
@@ -244,6 +251,28 @@ class Drawer {
         y += ROW;
       }
       y += 20;
+    }
+    if (order && batting.length) {
+      ctx.fillStyle = C.fg;
+      ctx.font = `600 22px ${FONT}`;
+      ctx.textBaseline = "alphabetic";
+      ctx.fillText("Batting order", PAD, y + 26);
+      y += 40;
+      const w = (W - 2 * PAD) / 3;
+      batting.forEach((o, i) => {
+        const r = {
+          x: PAD + (i % 3) * w + 2,
+          y: y + Math.floor(i / 3) * ROW + 3,
+          w: w - 4,
+          h: ROW - 6,
+        };
+        const side = o.ref.unit ?? order.id;
+        this.cell(
+          r,
+          this.char(at(team, { side, pos: o.ref.pos, index: o.ref.depth - 1 })),
+          `${i + 1}. ${o.label}`,
+        );
+      });
     }
     return { canvas: this.canvas, portraits: this.portraits };
   }

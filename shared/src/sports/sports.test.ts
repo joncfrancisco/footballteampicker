@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { autoFill, place, randomize, shapeErrors, setSection, violations } from "../lineup";
+import {
+  autoFill,
+  moveInOrder,
+  place,
+  randomize,
+  setSection,
+  shapeErrors,
+  switchVariant,
+  violations,
+} from "../lineup";
 import { refLabel } from "../formations";
 import { unitDef, unitFormations, unitRows } from "../sport";
 import { newTeam } from "../team";
@@ -125,5 +134,48 @@ describe("hockey special teams (#64)", () => {
     // A second power-play spot is a move within the power play.
     const r = place(t, roster, "f", { side: "powerPlay", pos: "PP2", index: 0 });
     expect(r.ok && r.team.sections!.powerPlay!.PP1![2]).toBeNull();
+  });
+});
+
+describe("baseball (#65)", () => {
+  const roster = new Map([
+    ["ohtani", { name: "Ohtani", twoWay: true }],
+    ["one", { name: "One-way", twoWay: false }],
+  ]);
+  const P = (pos: string, index = 0) => ({ side: "pitchers", pos, index });
+  const H = (pos: string, index = 0) => ({ side: "hitters", pos, index });
+
+  it("lets only a two-way player pitch and hit", () => {
+    let t = newTeam({ id: "l", ip: "X" }, "baseball");
+    const sp = place(t, roster, "ohtani", P("SP"));
+    if (!sp.ok) throw new Error(sp.reason);
+    const dh = place(sp.team, roster, "ohtani", H("DH"));
+    expect(dh.ok).toBe(true);
+    t = (place(t, roster, "one", P("RP", 3)) as { team: typeof t }).team;
+    expect(place(t, roster, "one", H("CF"))).toEqual({
+      ok: false,
+      reason: "One-way isn't a two-way player",
+    });
+  });
+
+  it("turning the DH off pools the DH and bats the pitcher in the DH's place", () => {
+    let t = newTeam({ id: "l", ip: "X" }, "baseball");
+    t = moveInOrder(t, "hitters", "DH", -1); // DH bats 3rd
+    t = (place(t, roster, "one", H("DH")) as { team: typeof t }).team;
+    const { team: off, moved } = switchVariant(t, "hitters", "no-dh");
+    expect(moved).toEqual(["one"]);
+    expect(off.units.hitters!.depth).not.toHaveProperty("DH");
+    expect(off.units.hitters!.order).toEqual(["CF", "SS", "P", "1B", "3B", "RF", "LF", "2B", "C"]);
+    expect(teamErrors(off, roster)).toEqual([]);
+    const back = switchVariant(off, "hitters", "dh").team;
+    expect(back.units.hitters!.order![2]).toBe("DH");
+  });
+
+  it("refuses a batting order that isn't the nine starters", () => {
+    const t = newTeam({ id: "l", ip: "X" }, "baseball");
+    t.units.hitters!.order = ["CF", "SS", "1B", "DH", "3B", "RF", "LF", "2B", "BN"];
+    expect(teamErrors(t, roster)).toEqual([
+      "Batting order must list CF, SS, 1B, DH, 3B, RF, LF, 2B, C once each",
+    ]);
   });
 });

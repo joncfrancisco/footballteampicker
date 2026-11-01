@@ -153,3 +153,34 @@ describe("basketball (#63)", () => {
     expect(tile("CL3")).toHaveAccessibleName("Ahri, closing five CL3");
   });
 });
+
+describe("baseball (#65)", () => {
+  beforeEach(() => window.history.replaceState(null, "", "/build/demo-lol?sport=baseball"));
+  const order = () =>
+    [...screen.getByTestId("batting-order").querySelectorAll("li")].map(
+      (li) => (li as HTMLElement).dataset.order,
+    );
+
+  it("puts the day's starter on the mound and nine on the diamond", () => {
+    render(<App />);
+    const diamond = screen.getByTestId("field-hitters");
+    expect(diamond.querySelectorAll(".slot")).toHaveLength(9);
+    expect(diamond.querySelector('[data-slot="p"]')).toHaveAttribute("data-ref", "SP1");
+    expect(screen.queryByRole("combobox", { name: "Pitchers" })).toBeNull();
+  });
+
+  it("reorders the batting order and swaps the DH for the pitcher", () => {
+    render(<App />);
+    expect(order()).toEqual(["CF", "SS", "1B", "DH", "3B", "RF", "LF", "2B", "C"]);
+    fireEvent.click(screen.getByRole("button", { name: "Move C up the order" }));
+    expect(order().slice(-2)).toEqual(["C", "2B"]);
+    fireEvent.change(screen.getByRole("combobox", { name: "DH" }), { target: { value: "no-dh" } });
+    expect(order()[3]).toBe("P");
+    fireEvent.click(screen.getByRole("button", { name: "Depth chart" }));
+    expect(
+      within(screen.getByTestId("depth-hitters"))
+        .getAllByRole("rowheader")
+        .map((th) => th.textContent),
+    ).not.toContain("DH");
+  });
+});

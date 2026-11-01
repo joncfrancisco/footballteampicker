@@ -1,7 +1,7 @@
 import type { DepthRef } from "./formations";
-import { sectionDef, unitDef, unitRows, type SectionDef, type SportDef } from "./sport";
+import { orderSpots, sectionDef, unitDef, unitRows, type SectionDef, type SportDef } from "./sport";
 import { sportOf } from "./sports";
-import { emptyDepth, emptyUnit, type CharId, type Depth, type Team } from "./team";
+import { emptyDepth, emptyUnit, type CharId, type Depth, type Team, type UnitState } from "./team";
 
 /**
  * The lineup rules, shared by the builder (#7, #21) and the API's team validation (#9), and
@@ -288,13 +288,15 @@ export function switchVariant(
     });
   }
   const fresh = emptyUnit(sport, unitId, variant);
-  return {
-    team: {
-      ...team,
-      units: { ...team.units, [unitId]: { ...state, ...fresh, depth: target } },
-    },
-    moved,
-  };
+  const next: UnitState = { ...state, ...fresh, depth: target };
+  // A batting order keeps its order: spots in both variants stay put, the rest swap in place
+  // (with the DH off, the pitcher bats where the DH did).
+  if (state.order) {
+    const ids = (unit.battingOrder?.[variant] ?? []).map((o) => o.id);
+    const added = ids.filter((id) => !state.order!.includes(id));
+    next.order = state.order.map((id) => (ids.includes(id) ? id : added.shift()!));
+  }
+  return { team: { ...team, units: { ...team.units, [unitId]: next } }, moved };
 }
 
 export function movedNotice(moved: CharId[]): string | undefined {
@@ -371,4 +373,17 @@ export function randomize(team: Team, order: CharId[], random: () => number = Ma
   }
   const cleared = sportOf(team).units.reduce((t, u) => clearSide(t, u.id), team);
   return autoFill(cleared, shuffled);
+}
+
+/** Move a batting order spot up (-1) or down (+1); writes out the order if it was default. */
+export function moveInOrder(team: Team, unitId: string, id: string, by: -1 | 1): Team {
+  const unit = unitDef(sportOf(team), unitId);
+  const state = team.units[unitId];
+  if (!unit || !state) return team;
+  const order = orderSpots(unit, state.variant, state.order).map((o) => o.id);
+  const i = order.indexOf(id);
+  const j = i + by;
+  if (i < 0 || j < 0 || j >= order.length) return team;
+  [order[i], order[j]] = [order[j]!, order[i]!];
+  return { ...team, units: { ...team.units, [unitId]: { ...state, order } } };
 }

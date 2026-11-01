@@ -291,12 +291,50 @@ const RINK: SurfaceDef = {
   panes: wholePanes(1),
 };
 
+// ---- Diamond ---------------------------------------------------------------------------
+
+/** Baseball: home plate at the bottom, 90 ft between bases, the outfield fence at the top. */
+const BASE = 28 / Math.SQRT2; // 90 ft is 28 units; bases sit on the diagonals.
+const HOME: [number, number] = [50, 90];
+const FIRST: [number, number] = [50 + BASE, 90 - BASE];
+const SECOND: [number, number] = [50, 90 - 2 * BASE];
+const THIRD: [number, number] = [50 - BASE, 90 - BASE];
+
+const DIAMOND: SurfaceDef = {
+  id: "diamond",
+  noun: "Diamond",
+  aspect: 1,
+  background: "var(--turf)",
+  paint: GRIDIRON.paint,
+  marks: () => [
+    // Foul lines out to the fence, which is an arc round home plate.
+    { kind: "line", x1: 50, y1: 90, x2: 50 - 70, y2: 90 - 70 },
+    { kind: "line", x1: 50, y1: 90, x2: 50 + 70, y2: 90 - 70 },
+    { kind: "arc", cx: 50, cy: 90, r: 84, from: 225, to: 315 },
+    // The infield dirt, then the diamond, bases and mound on it.
+    { kind: "arc", cx: 50, cy: 72, r: 30, from: 200, to: 340 },
+    { kind: "polygon", points: [HOME, FIRST, SECOND, THIRD], fill: true },
+    { kind: "polygon", points: [HOME, FIRST, SECOND, THIRD] },
+    ...[FIRST, SECOND, THIRD].map(([x, y]): Mark => ({
+      kind: "circle",
+      cx: x,
+      cy: y,
+      r: 1.2,
+      fill: true,
+    })),
+    { kind: "circle", cx: 50, cy: 90 - 18.8, r: 3 },
+    { kind: "circle", cx: HOME[0], cy: HOME[1], r: 1.2, fill: true },
+  ],
+  height: aspectHeight(1),
+  panes: wholePanes(1),
+};
+
 export const SURFACES: Record<SurfaceId, SurfaceDef | undefined> = {
   gridiron: GRIDIRON,
   pitch: PITCH,
   court: COURT,
   rink: RINK,
-  diamond: undefined,
+  diamond: DIAMOND,
 };
 
 export function surfaceOf(sport: SportDef): SurfaceDef {
