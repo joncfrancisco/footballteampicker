@@ -105,15 +105,12 @@ the agent's cloud environment, never in the repo, Terraform or chat:
 aws iam create-access-key --user-name footballteampicker-moderator-agent
 ```
 
-The environment then assumes the role through a profile that reads the key from the
-environment:
-
-```ini
-[profile moderator]
-role_arn = arn:aws:iam::020949219706:role/footballteampicker-moderator
-credential_source = Environment
-duration_seconds = 3600
-```
+Put the key in the environment as `MODERATOR_AWS_ACCESS_KEY_ID` and
+`MODERATOR_AWS_SECRET_ACCESS_KEY` (not the standard `AWS_*` names, which would make the AWS SDK
+use the user's key directly instead of the role). Each run starts with `moderation/setup.sh`,
+which writes a `moderator` profile that assumes the role and checks the resulting identity;
+`moderation/as-moderator <command>` then runs a command as the role. The agent's instructions
+are in [moderation/agent.md](moderation/agent.md).
 
 Rotate the key every 90 days: create a second key, update the environment, confirm a run, then
 `aws iam delete-access-key --user-name footballteampicker-moderator-agent --access-key-id <old>`.
