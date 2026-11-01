@@ -1,26 +1,23 @@
-import { LOS_Y, refLabel, type Slot } from "@ftp/shared";
+import { refLabel, type Slot } from "@ftp/shared";
 import { useMemo } from "react";
 import { useSpot } from "../dnd/useSpot";
 import { useLineup } from "../dnd/Lineup";
 import { Sprite } from "../Sprite";
 import { useWidth } from "../useSize";
 import { layoutSlots } from "./layout";
-import { NARROW_WIDTH, SCALE, TILE } from "./views";
+import { arcPath, type Scale } from "./marks";
+import type { Pane, SurfaceDef } from "./surfaces";
+import { NARROW_WIDTH, TILE } from "./views";
 
-type Props = {
-  side: "offense" | "defense";
-  slots: Slot[];
-  /** Field rows to show (0–100 field units). */
-  yMin: number;
-  yMax: number;
-};
+type Props = { surface: SurfaceDef; pane: Pane };
 
-/** One side of the ball: turf, lines and the formation's 11 slots. */
-export function Field({ side, slots, yMin, yMax }: Props) {
+/** One pane of a surface: its markings and the formation's slots. */
+export function Field({ surface, pane }: Props) {
+  const { slots, yMin, yMax, away, unit: side } = pane;
   const [ref, width] = useWidth<HTMLDivElement>();
   const narrow = width > 0 && width < NARROW_WIDTH;
   const tile = narrow ? TILE.narrow : TILE.wide;
-  const height = Math.round((yMax - yMin) * (narrow ? SCALE.narrow : SCALE.wide));
+  const height = surface.height(pane, width || NARROW_WIDTH, narrow);
 
   const placed = useMemo(
     () =>
@@ -33,20 +30,26 @@ export function Field({ side, slots, yMin, yMax }: Props) {
             width,
             height,
             tile,
-            away: side === "offense" ? 1 : -1,
+            away,
           }),
-    [slots, yMin, yMax, width, height, tile, side],
+    [slots, yMin, yMax, width, height, tile, away],
   );
   const byId = new Map(slots.map((s) => [s.id, s]));
 
   return (
     <div
       ref={ref}
-      className={`field field-${side}${narrow ? " narrow" : ""}`}
-      style={{ height }}
+      className={`field field-${side} surface-${surface.id}${narrow ? " narrow" : ""}`}
+      style={{ height, background: surface.background }}
       data-testid={`field-${side}`}
     >
-      <FieldLines yMin={yMin} yMax={yMax} />
+      {width > 0 && (
+        <Markings
+          surface={surface}
+          pane={pane}
+          scale={{ sx: width / 100, sy: height / (yMax - yMin) }}
+        />
+      )}
       {placed.map((p) => (
         <SlotTile
           key={p.id}
@@ -63,7 +66,7 @@ export function Field({ side, slots, yMin, yMax }: Props) {
 }
 
 function SlotTile(props: {
-  side: "offense" | "defense";
+  side: string;
   slot: Slot;
   left: number;
   top: number;
@@ -72,7 +75,8 @@ function SlotTile(props: {
 }) {
   const { side, slot, left, top, tile, narrow } = props;
   const { list } = useLineup();
-  const spot = { side, pos: slot.ref.pos, index: slot.ref.depth - 1 };
+  // A slot can fill from another unit (baseball's pitcher stands on the defensive diamond).
+  const spot = { side: slot.ref.unit ?? side, pos: slot.ref.pos, index: slot.ref.depth - 1 };
   const s = useSpot(spot);
   const ref = refLabel(slot.ref);
   return (
@@ -112,14 +116,9 @@ function SlotTile(props: {
   );
 }
 
-/** Yard lines every 5 yards (10 units) from the line of scrimmage, hash marks every yard. */
-function FieldLines({ yMin, yMax }: { yMin: number; yMax: number }) {
-  const lines: number[] = [];
-  for (let y = LOS_Y - 50; y <= LOS_Y + 50; y += 10) if (y > yMin && y < yMax) lines.push(y);
-  const hashes: number[] = [];
-  for (let y = Math.ceil(yMin / 2) * 2; y < yMax; y += 2) hashes.push(y);
-  const showLos = LOS_Y >= yMin && LOS_Y <= yMax;
-
+/** The surface's markings for the rows on show. */
+function Markings({ surface, pane, scale }: { surface: SurfaceDef; pane: Pane; scale: Scale }) {
+  const { yMin, yMax } = pane;
   return (
     <svg
       className="field-lines"
@@ -127,40 +126,23 @@ function FieldLines({ yMin, yMax }: { yMin: number; yMax: number }) {
       preserveAspectRatio="none"
       aria-hidden="true"
     >
-      {lines.map((y) => (
-        <line
-          key={y}
-          x1={0}
-          x2={100}
-          y1={y}
-          y2={y}
-          className="yard"
-          vectorEffect="non-scaling-stroke"
-        />
-      ))}
-      {hashes.map((y) =>
-        [0.5, 44.3, 55.7, 99.5].map((x) => (
-          <line
-            key={`${x}-${y}`}
-            x1={x - 0.6}
-            x2={x + 0.6}
-            y1={y}
-            y2={y}
-            className="hash"
-            vectorEffect="non-scaling-stroke"
-          />
-        )),
-      )}
-      {showLos && (
-        <line
-          x1={0}
-          x2={100}
-          y1={LOS_Y}
-          y2={LOS_Y}
-          className="los"
-          vectorEffect="non-scaling-stroke"
-        />
-      )}
+      {surface.marks(pane).map((m, i) => {
+        const cls =
+          m.kind === "line" && m.accent
+            ? "mark accent"
+            : "fill" in m && m.fill
+              ? "mark-fill"
+              : "mark";
+        const common = { key: i, className: cls, vectorEffect: "non-scaling-stroke" as const };
+        if (m.kind === "line") return <line {...common} x1={m.x1} x2={m.x2} y1={m.y1} y2={m.y2} />;
+        if (m.kind === "rect") return <rect {...common} x={m.x} y={m.y} width={m.w} height={m.h} />;
+        if (m.kind === "circle")
+          return (
+            <ellipse {...common} cx={m.cx} cy={m.cy} rx={m.r} ry={(m.r * scale.sx) / scale.sy} />
+          );
+        if (m.kind === "arc") return <path {...common} d={arcPath(m, scale)} />;
+        return <polygon {...common} points={m.points.map((p) => p.join(",")).join(" ")} />;
+      })}
     </svg>
   );
 }

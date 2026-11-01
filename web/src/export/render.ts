@@ -1,19 +1,16 @@
 import {
-  LOS_Y,
   at,
-  findFormation,
   formationLabel,
-  slotsFor,
   sportOf,
   unitRows,
   type SectionDef,
   type Character,
-  type Slot,
   type Spot,
   type Team,
 } from "@ftp/shared";
 import { layoutSlots } from "../field/layout";
-import { VIEW } from "../field/views";
+import { paintMarks } from "../field/marks";
+import { surfaceOf, type Pane, type SurfaceDef } from "../field/surfaces";
 import type { LoadedList } from "../lists";
 
 /**
@@ -21,14 +18,23 @@ import type { LoadedList } from "../lists";
  * drawImage from the list's (same-origin) sprite atlas. No DOM capture, so no missed CSS
  * sprites or font races, and one image decode.
  */
-export type Layout = "field" | "offense" | "defense" | "depth";
+/** "field" (everything on the surface), a unit's pane on its own, or "depth". */
+export type Layout = string;
 
-export const LAYOUTS: Record<Layout, { label: string; file: string }> = {
-  field: { label: "Field, both sides", file: "field" },
-  offense: { label: "Field, offense", file: "offense" },
-  defense: { label: "Field, defense", file: "defense" },
-  depth: { label: "Depth chart", file: "depth-chart" },
-};
+/** The export layouts a team offers: football has both sides, one side, depth chart. */
+export function layoutsFor(team: Team): { id: Layout; label: string }[] {
+  const sport = sportOf(team);
+  const surface = surfaceOf(sport);
+  const panes = surface.panes(sport, team);
+  const facing = (surface.facing?.(sport, team).length ?? 0) > 1;
+  return [
+    { id: "field", label: facing ? `${surface.noun}, both sides` : surface.noun },
+    ...(panes.length > 1
+      ? panes.map((p) => ({ id: p.unit, label: `${surface.noun}, ${p.label.toLowerCase()}` }))
+      : []),
+    { id: "depth", label: "Depth chart" },
+  ];
+}
 
 export type Rect = { x: number; y: number; w: number; h: number };
 export type Rendered = { canvas: HTMLCanvasElement; portraits: Rect[] };
@@ -39,9 +45,6 @@ const C = {
   muted: "#5d6660",
   border: "#d3d8d4",
   surface: "#ffffff",
-  turf: "#2f7a3e",
-  line: "rgba(255,255,255,0.55)",
-  los: "#5aa9ff",
   tile: "#10331b",
   tileEmpty: "rgba(255,255,255,0.14)",
   accent: "#1f6feb",
@@ -51,8 +54,6 @@ const FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
 const PAD = 40;
 const HEADER_H = PAD + 92;
 const FOOTER_H = 100;
-/** One side on its own: a little tighter around the formation than the on-screen tab. */
-const SINGLE_VIEW = { offense: { yMin: 47, yMax: 71 }, defense: { yMin: 21, yMax: 51 } };
 
 export function exportFilename(title: string, layout: Layout): string {
   const slug =
@@ -62,7 +63,7 @@ export function exportFilename(title: string, layout: Layout): string {
       .replace(/[\u0300-\u036f]/g, "") // accents: "ï" -> "i"
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "") || "team";
-  return `${slug}-${LAYOUTS[layout].file}.png`;
+  return `${slug}-${layout === "depth" ? "depth-chart" : layout}.png`;
 }
 
 const atlasCache = new Map<string, Promise<HTMLImageElement>>();
@@ -113,23 +114,30 @@ class Drawer {
 
   // ---- Layouts -------------------------------------------------------------------------
 
-  field(team: Team, layout: "field" | "offense" | "defense", url?: string): Rendered {
+  field(team: Team, layout: string, url?: string): Rendered {
     const sport = sportOf(team);
-    const offense = findFormation(sport, team.units.offense!.formation)!;
-    const defense = findFormation(sport, team.units.defense!.formation)!;
+    const surface = surfaceOf(sport);
+    const facing = surface.facing?.(sport, team);
+    const all = layout === "field";
+    const shown = all
+      ? (facing ?? surface.panes(sport, team).slice(0, 1))
+      : surface
+          .panes(sport, team)
+          .filter((p) => p.unit === layout)
+          .map((p) => ({ ...p, ...surface.exportView?.(p.unit) }));
     const staff = sport.sections.find((s) => s.kind === "staff" && team.sections?.[s.id]);
     const situational = sport.sections.find(
       (s) => s.kind === "situational" && team.sections?.[s.id],
     );
-    const both = layout === "field";
+    // Facing panes go landscape with sections beside them; one pane is a portrait.
+    const both = shown.length > 1;
     const [W, H] = both ? [1600, 900] : [1080, 1350];
     this.begin(W, H);
 
-    const subtitle = both
-      ? `${formationLabel(offense)} vs ${formationLabel(defense)}`
-      : layout === "offense"
-        ? formationLabel(offense)
-        : formationLabel(defense);
+    const subtitle = [...shown]
+      .reverse()
+      .map((p) => formationLabel(p.formation))
+      .join(" vs ");
     let top = this.header(team.title, subtitle, W);
     const bottom = this.footer(W, H, url);
 
@@ -147,7 +155,8 @@ class Drawer {
         );
         fieldArea = { ...fieldArea, w: fieldArea.w - panelW - 16 };
       } else {
-        const panelH = 4 * 58 + 44;
+        const spots = Object.values(situational.rows).reduce((n, r) => n + r, 0);
+        const panelH = Math.ceil(spots / 2) * 58 + 44;
         this.sectionPanel(
           team,
           situational,
@@ -161,31 +170,20 @@ class Drawer {
     const tile = both
       ? { width: 76, height: 92, sprite: 54 }
       : { width: 92, height: 112, sprite: 66 };
-    if (both) {
-      const defSpan = VIEW.faceDefense.yMax - VIEW.faceDefense.yMin;
-      const offSpan = VIEW.faceOffense.yMax - VIEW.faceOffense.yMin;
-      const defH = Math.round((fieldArea.h * defSpan) / (defSpan + offSpan));
-      this.fieldSide(
-        team,
-        "defense",
-        defense.slots,
-        { ...fieldArea, h: defH },
-        VIEW.faceDefense,
-        tile,
-      );
-      this.fieldSide(
-        team,
-        "offense",
-        slotsFor(offense, team.units.offense!.align),
-        { ...fieldArea, y: fieldArea.y + defH, h: fieldArea.h - defH },
-        VIEW.faceOffense,
-        tile,
-      );
-    } else {
-      const side = layout;
-      const slots =
-        side === "offense" ? slotsFor(offense, team.units.offense!.align) : defense.slots;
-      this.fieldSide(team, side, slots, fieldArea, SINGLE_VIEW[side], tile);
+    const total = shown.reduce((n, p) => n + p.yMax - p.yMin, 0);
+    let y = fieldArea.y;
+    for (const pane of shown) {
+      const h = Math.round((fieldArea.h * (pane.yMax - pane.yMin)) / total);
+      let area: Rect = { ...fieldArea, y, h };
+      if (surface.aspect) {
+        // Keep the surface's proportions, centred in the space.
+        const span = (pane.yMax - pane.yMin) / 100;
+        const w = Math.min(area.w, area.h / (surface.aspect * span));
+        const fh = w * surface.aspect * span;
+        area = { x: area.x + (area.w - w) / 2, y: area.y + (area.h - fh) / 2, w, h: fh };
+      }
+      this.fieldSide(team, surface, pane, area, tile);
+      y += h;
     }
     return { canvas: this.canvas, portraits: this.portraits };
   }
@@ -280,44 +278,29 @@ class Drawer {
 
   private fieldSide(
     team: Team,
-    side: "offense" | "defense",
-    slots: Slot[],
+    surface: SurfaceDef,
+    pane: Pane,
     area: Rect,
-    view: { yMin: number; yMax: number },
     tile: { width: number; height: number; sprite: number },
   ) {
     const ctx = this.ctx;
-    ctx.save();
-    ctx.fillStyle = C.turf;
+    ctx.fillStyle = surface.paint.bg;
     ctx.fillRect(area.x, area.y, area.w, area.h);
-    const yPx = (y: number) => area.y + ((y - view.yMin) / (view.yMax - view.yMin)) * area.h;
-    ctx.strokeStyle = C.line;
-    ctx.lineWidth = 1;
-    for (let y = LOS_Y - 50; y <= LOS_Y + 50; y += 10)
-      if (y > view.yMin && y < view.yMax) line(ctx, area.x, yPx(y), area.x + area.w, yPx(y));
-    for (let y = Math.ceil(view.yMin / 2) * 2; y < view.yMax; y += 2)
-      for (const x of [0.5, 44.3, 55.7, 99.5]) {
-        const px = area.x + (x / 100) * area.w;
-        line(ctx, px - 6, yPx(y), px + 6, yPx(y));
-      }
-    if (LOS_Y >= view.yMin && LOS_Y <= view.yMax) {
-      ctx.strokeStyle = C.los;
-      ctx.lineWidth = 3;
-      line(ctx, area.x, yPx(LOS_Y), area.x + area.w, yPx(LOS_Y));
-    }
-    ctx.restore();
+    paintMarks(ctx, surface.marks(pane), area, pane, surface.paint);
 
     const placed = layoutSlots({
-      slots,
-      ...view,
+      slots: pane.slots,
+      yMin: pane.yMin,
+      yMax: pane.yMax,
       width: area.w,
       height: area.h,
       tile,
-      away: side === "offense" ? 1 : -1,
+      away: pane.away,
     });
-    const byId = new Map(slots.map((s) => [s.id, s]));
+    const byId = new Map(pane.slots.map((s) => [s.id, s]));
     for (const p of placed) {
       const slot = byId.get(p.id)!;
+      const side = slot.ref.unit ?? pane.unit;
       const c = this.char(at(team, { side, pos: slot.ref.pos, index: slot.ref.depth - 1 }));
       this.fieldTile(
         {
@@ -458,13 +441,6 @@ class Drawer {
   private char(id: string | null): Character | undefined {
     return id ? this.list.byId.get(id) : undefined;
   }
-}
-
-function line(ctx: CanvasRenderingContext2D, x1: number, y1: number, x2: number, y2: number) {
-  ctx.beginPath();
-  ctx.moveTo(x1, y1);
-  ctx.lineTo(x2, y2);
-  ctx.stroke();
 }
 
 function roundRect(ctx: CanvasRenderingContext2D, r: Rect, radius: number) {

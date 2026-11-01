@@ -1,7 +1,7 @@
 import type { Team } from "@ftp/shared";
 import { useState } from "react";
 import type { LoadedList } from "../lists";
-import { LAYOUTS, exportFilename, renderTeam, type Layout } from "./render";
+import { exportFilename, layoutsFor, renderTeam, type Layout } from "./render";
 
 const canCopy = typeof ClipboardItem !== "undefined" && !!navigator.clipboard?.write;
 
@@ -13,7 +13,8 @@ function toBlob(canvas: HTMLCanvasElement): Promise<Blob> {
 
 /** Pick a layout, then download, copy or share it as a PNG. Entirely client-side. */
 export function ExportMenu({ list, team }: { list: LoadedList; team: Team }) {
-  const [layout, setLayout] = useState<Layout>("field");
+  const [chosen, setLayout] = useState<Layout>("field");
+  const layout = layoutsFor(team).some((l) => l.id === chosen) ? chosen : "field";
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
 
@@ -66,9 +67,9 @@ export function ExportMenu({ list, team }: { list: LoadedList; team: Team }) {
       <label>
         Export{" "}
         <select value={layout} onChange={(e) => setLayout(e.target.value as Layout)}>
-          {(Object.keys(LAYOUTS) as Layout[]).map((l) => (
-            <option key={l} value={l}>
-              {LAYOUTS[l].label}
+          {layoutsFor(team).map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.label}
             </option>
           ))}
         </select>

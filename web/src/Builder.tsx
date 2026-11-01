@@ -8,7 +8,6 @@ import {
   movedNotice,
   randomize,
   setSection,
-  slotsFor,
   sportOf,
   switchVariant,
   unitFormations,
@@ -21,7 +20,7 @@ import { spotLabel } from "./dnd/ids";
 import { Lineup, useLineup } from "./dnd/Lineup";
 import { ExportMenu } from "./export/ExportMenu";
 import { Field } from "./field/Field";
-import { VIEW } from "./field/views";
+import { surfaceOf } from "./field/surfaces";
 import type { LoadedList } from "./lists";
 import { Pool } from "./pool/Pool";
 import { SectionPanel, StaffStrip } from "./sections/Sections";
@@ -64,16 +63,17 @@ export function Builder({ list, team, onChange, readOnly = false, initialView, c
 function BuilderBody(props: Props & { notice: string; setNotice: (s: string) => void }) {
   const { list, team, onChange, notice, setNotice, readOnly, children } = props;
   const [view, setView] = useState<"field" | "depth">(props.initialView ?? "field");
-  const [tab, setTab] = useState<"offense" | "defense">("offense");
-  const facing = useMedia("(min-width: 1100px)");
-  const bothPickers = facing || view === "depth";
+  const sport = sportOf(team);
+  const surface = surfaceOf(sport);
+  const wide = useMedia("(min-width: 1100px)");
+  const facingPanes = wide ? surface.facing?.(sport, team) : undefined;
+  const panes = surface.panes(sport, team);
+  const [tabState, setTab] = useState(panes[0]?.unit);
+  const tab = panes.some((p) => p.unit === tabState) ? tabState : panes[0]?.unit;
+  const bothPickers = !!facingPanes || view === "depth" || panes.length < 2;
   const order = list.characters.map((c) => c.id);
 
-  const sport = sportOf(team);
   const formationOf = (unit: string) => findFormation(sport, team.units[unit]?.formation);
-  const offense = formationOf("offense")!;
-  const defense = formationOf("defense")!;
-  const offenseSlots = slotsFor(offense, team.units.offense!.align);
   // Pickers follow the surface: on the gridiron the defense is drawn above the offense.
   const pickerUnits = sport.surface === "gridiron" ? [...sport.units].reverse() : sport.units;
 
@@ -124,7 +124,7 @@ function BuilderBody(props: Props & { notice: string; setNotice: (s: string) => 
         <div className="view-toggle" role="group" aria-label="View">
           {(["field", "depth"] as const).map((v) => (
             <button key={v} type="button" aria-pressed={view === v} onClick={() => setView(v)}>
-              {v === "field" ? "Field" : "Depth chart"}
+              {v === "field" ? surface.noun : "Depth chart"}
             </button>
           ))}
         </div>
@@ -231,30 +231,33 @@ function BuilderBody(props: Props & { notice: string; setNotice: (s: string) => 
 
           {view === "depth" ? (
             <DepthChart list={list} team={team} sport={sport} />
-          ) : facing ? (
+          ) : facingPanes ? (
             <div className="facing">
-              <Field side="defense" slots={defense.slots} {...VIEW.faceDefense} />
-              <Field side="offense" slots={offenseSlots} {...VIEW.faceOffense} />
+              {facingPanes.map((pane) => (
+                <Field key={pane.unit} surface={surface} pane={pane} />
+              ))}
             </div>
           ) : (
             <>
-              <div className="tabs" role="tablist">
-                {(["offense", "defense"] as const).map((side) => (
-                  <button
-                    key={side}
-                    role="tab"
-                    aria-selected={tab === side}
-                    onClick={() => setTab(side)}
-                  >
-                    {side === "offense" ? "Offense" : "Defense"}
-                  </button>
-                ))}
-              </div>
-              {tab === "offense" ? (
-                <Field side="offense" slots={offenseSlots} {...VIEW.offense} />
-              ) : (
-                <Field side="defense" slots={defense.slots} {...VIEW.defense} />
+              {panes.length > 1 && (
+                <div className="tabs" role="tablist">
+                  {panes.map((pane) => (
+                    <button
+                      key={pane.unit}
+                      role="tab"
+                      aria-selected={tab === pane.unit}
+                      onClick={() => setTab(pane.unit)}
+                    >
+                      {pane.label}
+                    </button>
+                  ))}
+                </div>
               )}
+              {panes
+                .filter((pane) => pane.unit === tab)
+                .map((pane) => (
+                  <Field key={pane.unit} surface={surface} pane={pane} />
+                ))}
             </>
           )}
 

@@ -167,17 +167,19 @@ button[aria-pressed="true"]:not(.slot, .depth-cell, .section-tile),
   height: 100%;
 }
 
-.field-lines .yard {
+.field-lines .mark {
+  fill: none;
   stroke: var(--turf-line);
   stroke-width: 1;
 }
 
-.field-lines .hash {
-  stroke: var(--turf-line);
-  stroke-width: 1;
+.field-lines .mark-fill {
+  fill: var(--turf-line);
+  stroke: none;
+  opacity: 0.35;
 }
 
-.field-lines .los {
+.field-lines .accent {
   stroke: var(--los);
   stroke-width: 3;
 }
