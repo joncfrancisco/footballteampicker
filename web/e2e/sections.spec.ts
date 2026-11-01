@@ -15,7 +15,7 @@ async function drag(page: Page, from: Locator, to: Locator) {
 const card = (page: Page, name: string) =>
   page.getByTestId("pool").getByRole("button", { name: new RegExp(`^${name}(,|$)`) });
 
-test.use({ viewport: { width: 1440, height: 1400 } });
+test.use({ viewport: { width: 1440, height: 1600 } });
 
 // Sharing arrives with #12; until then the draft is how a team round-trips.
 test("enable both sections, fill them, reload: present; disable, reload: absent", async ({

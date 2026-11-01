@@ -10,6 +10,7 @@ import {
   type Team,
 } from "@ftp/shared";
 import { layoutSlots } from "../field/layout";
+import { spotLabel } from "../dnd/ids";
 import { paintMarks } from "../field/marks";
 import { surfaceOf, type Pane, type SurfaceDef } from "../field/surfaces";
 import type { LoadedList } from "../lists";
@@ -236,7 +237,7 @@ class Drawer {
           this.cell(
             r,
             this.char(at(team, { side: s.side, pos, index })),
-            s.side === "staff" ? pos : `${pos}${index + 1}`,
+            spotLabel({ side: s.side, pos, index }, sport),
           );
         }
         y += ROW;
@@ -376,7 +377,7 @@ class Drawer {
       this.cell(
         { x: area.x + col * (w + gap), y: area.y + 28 + row * h, w, h: h - 6 },
         this.char(team.sections?.[section.id]?.[pos]?.[index] ?? null),
-        `${pos}${index + 1}`,
+        spotLabel({ side: section.id, pos, index }, sportOf(team)),
       );
     });
   }

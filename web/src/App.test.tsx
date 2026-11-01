@@ -67,3 +67,55 @@ describe("App", () => {
     expect(qb).toHaveTextContent("Aatrox");
   });
 });
+
+describe("sports (#44)", () => {
+  const pick = (name: string) => fireEvent.click(screen.getByRole("radio", { name }));
+
+  it("switches sport, keeping a draft per sport and the sport in the URL", () => {
+    render(<App />);
+    fireEvent.change(screen.getByRole("textbox", { name: "Team name" }), {
+      target: { value: "Football draft" },
+    });
+    pick("Soccer");
+    expect(location.search).toBe("?sport=soccer");
+    expect(screen.getByRole("combobox", { name: "Squad" })).toHaveValue("soccer-433");
+    expect(screen.getByTestId("field-squad").querySelectorAll(".slot")).toHaveLength(11);
+    expect(screen.getByRole("button", { name: "Pitch" })).toBeInTheDocument();
+    expect(screen.getByTestId("sport-badge")).toHaveTextContent("Soccer");
+    pick("Football");
+    expect(location.search).toBe("");
+    expect(screen.getByRole("textbox", { name: "Team name" })).toHaveValue("Football draft");
+  });
+
+  it("opens the sport named in the URL", () => {
+    window.history.replaceState(null, "", "/build/demo-lol?sport=soccer");
+    render(<App />);
+    expect(screen.getByRole("radio", { name: "Soccer" })).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("labels back-three wing-backs on the pitch, filled from the full-back rows", () => {
+    window.history.replaceState(null, "", "/build/demo-lol?sport=soccer");
+    render(<App />);
+    fireEvent.change(screen.getByRole("combobox", { name: "Squad" }), {
+      target: { value: "soccer-352" },
+    });
+    const rwb = screen.getByTestId("field-squad").querySelector('[data-slot="rwb"]')!;
+    expect(rwb).toHaveAttribute("data-ref", "RB1");
+    expect(rwb.textContent).toContain("RWB");
+  });
+
+  it("lets one player take several set pieces", () => {
+    window.history.replaceState(null, "", "/build/demo-lol?sport=soccer");
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "+ Set pieces" }));
+    const card = within(screen.getByTestId("pool")).getByRole("button", { name: /^Ahri/ });
+    const tile = (spot: string) =>
+      screen.getByTestId("set-pieces").querySelector(`[data-spot="${spot}"]`) as HTMLElement;
+    fireEvent.click(card);
+    fireEvent.click(tile("CAPT"));
+    fireEvent.click(card);
+    fireEvent.click(tile("PEN"));
+    expect(tile("CAPT")).toHaveAccessibleName("Ahri, set pieces CAPT");
+    expect(tile("PEN")).toHaveAccessibleName("Ahri, set pieces PEN");
+  });
+});

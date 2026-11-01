@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { shapeErrors, violations, type Roster } from "./lineup";
 import { FRONTS, STAFF_ROLES } from "./positions";
-import { findFormation, unitFormations } from "./sport";
+import { findFormation } from "./sport";
 import { SPORT_IDS, sportOf } from "./sports";
 import { upgradeTeam, type Team } from "./team";
 
@@ -143,7 +143,7 @@ export function teamErrors(team: Team, roster: Roster): string[] {
     const state = team.units[unit.id];
     if (!state) continue; // reported by shapeErrors
     const name = unit.name.toLowerCase();
-    const hasFormations = unitFormations(sport, unit.id).length > 0;
+    const hasFormations = sport.formations.some((f) => f.unit === unit.id);
     if (state.formation === undefined) {
       if (hasFormations) out.push(`Missing ${name} formation`);
       continue;

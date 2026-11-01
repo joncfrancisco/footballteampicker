@@ -152,7 +152,9 @@ export function Lineup({
     if (id === undefined) return "nowhere";
     if (id === POOL_DROP) return "the pool";
     const spot = parseSpotId(id);
-    return spot ? `${sideName(sportOf(team), spot.side)} ${spotLabel(spot)}` : "the pool";
+    return spot
+      ? `${sideName(sportOf(team), spot.side)} ${spotLabel(spot, sportOf(team))}`
+      : "the pool";
   };
   const activeName = (id: string | number) => {
     const spot = parseSpotId(id);

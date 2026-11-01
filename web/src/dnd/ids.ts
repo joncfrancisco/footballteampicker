@@ -1,4 +1,4 @@
-import type { Spot } from "@ftp/shared";
+import { sectionDef, type SportDef, type Spot } from "@ftp/shared";
 
 /** dnd-kit ids for depth spots: "spot:offense:WR:3" (index is 0-based). */
 export function spotId(spot: Spot): string {
@@ -24,7 +24,8 @@ export function parsePoolId(id: string | number): string | null {
 /** The pool itself is a drop target: dropping a placed character there removes them. */
 export const POOL_DROP = "pool-drop";
 
-/** "WR4" for a spot; staff roles are just the role ("HC"). */
-export function spotLabel(spot: Spot): string {
-  return spot.side === "staff" ? spot.pos : `${spot.pos}${spot.index + 1}`;
+/** "WR4" for a spot; staff and other named one-deep roles are just the role ("HC", "PEN"). */
+export function spotLabel(spot: Spot, sport?: SportDef): string {
+  const named = spot.side === "staff" || !!(sport && sectionDef(sport, spot.side)?.titles);
+  return named ? spot.pos : `${spot.pos}${spot.index + 1}`;
 }
