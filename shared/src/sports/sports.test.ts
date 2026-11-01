@@ -1,0 +1,85 @@
+import { describe, expect, it } from "vitest";
+import { autoFill, randomize, shapeErrors, setSection, violations } from "../lineup";
+import { refLabel } from "../formations";
+import { unitDef, unitFormations, unitRows } from "../sport";
+import { newTeam } from "../team";
+import { teamErrors } from "../schemas";
+import { SPORTS } from ".";
+
+/** Every registered sport must be complete, valid data (#44). */
+describe.each(SPORTS.map((s) => [s.id, s] as const))("%s", (_id, sport) => {
+  const roster = new Map(
+    Array.from({ length: 80 }, (_, i) => [`c${i}`, { name: `C${i}`, twoWay: false }]),
+  );
+
+  it("has unique unit and section ids, one staff section called staff", () => {
+    const ids = [...sport.units.map((u) => u.id), ...sport.sections.map((s) => s.id)];
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const id of ids) expect(id).toMatch(/^[A-Za-z]{1,16}$/);
+    const staff = sport.sections.filter((s) => s.kind === "staff");
+    expect(staff.map((s) => s.id)).toEqual(["staff"]);
+    for (const role of Object.keys(staff[0]!.rows)) expect(staff[0]!.titles?.[role]).toBeTruthy();
+  });
+
+  it("uses row names and depths the API accepts", () => {
+    const rows = [
+      ...sport.units.flatMap((u) => u.variants.map((v) => v.rows)),
+      ...sport.sections.map((s) => s.rows),
+    ];
+    for (const r of rows)
+      for (const [pos, n] of Object.entries(r)) {
+        expect(pos).toMatch(/^[A-Z0-9]{1,4}$/);
+        expect(n).toBeGreaterThanOrEqual(1);
+        expect(n).toBeLessThanOrEqual(7);
+      }
+  });
+
+  it("has a valid default for every unit and variant", () => {
+    for (const unit of sport.units)
+      for (const v of unit.variants) {
+        const team = newTeam({ id: "l", ip: "X" }, sport.id, { [unit.id]: v.id });
+        expect(teamErrors(team, roster)).toEqual([]);
+        if (unit.defaultFormation)
+          expect(unitFormations(sport, unit.id, v.id).map((f) => f.id)).toContain(
+            unit.defaultFormation[v.id],
+          );
+      }
+  });
+
+  it.each(sport.formations.map((f) => [f.id, f] as const))(
+    "formation %s only uses spots that exist, once each, on the surface",
+    (_f, f) => {
+      const unit = unitDef(sport, f.unit)!;
+      expect(unit).toBeDefined();
+      expect(new Set(f.slots.map((s) => s.id)).size).toBe(f.slots.length);
+      expect(new Set(f.slots.map((s) => `${s.ref.unit ?? ""}${refLabel(s.ref)}`)).size).toBe(
+        f.slots.length,
+      );
+      const variants = f.variant ? [f.variant] : unit.variants.map((v) => v.id);
+      for (const variant of variants)
+        for (const slot of f.slots) {
+          const rows = slot.ref.unit
+            ? unitRows(unitDef(sport, slot.ref.unit)!)
+            : unitRows(unit, variant);
+          expect(rows, refLabel(slot.ref)).toHaveProperty(slot.ref.pos);
+          expect(slot.ref.depth).toBeLessThanOrEqual(rows[slot.ref.pos]!);
+          expect(slot.x).toBeGreaterThanOrEqual(0);
+          expect(slot.x).toBeLessThanOrEqual(100);
+          expect(slot.y).toBeGreaterThanOrEqual(0);
+          expect(slot.y).toBeLessThanOrEqual(100);
+        }
+    },
+  );
+
+  it("auto-fills and randomizes into a valid team, sections on", () => {
+    const ids = [...roster.keys()];
+    let team = sport.sections.reduce(
+      (t, s) => setSection(t, s.id, true),
+      newTeam({ id: "l", ip: "X" }, sport.id),
+    );
+    expect(shapeErrors(team)).toEqual([]);
+    team = autoFill(team, ids);
+    expect(violations(team, roster)).toEqual([]);
+    expect(violations(randomize(team, ids), roster)).toEqual([]);
+  });
+});

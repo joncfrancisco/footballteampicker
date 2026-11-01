@@ -15,7 +15,7 @@ export function useSpot(spot: Spot) {
   const character = charId ? list.byId.get(charId) : undefined;
   const drop = useDroppable({ id, disabled: readOnly });
   const drag = useDraggable({ id, disabled: readOnly || !character });
-  const label = spotLabel(spot);
+  const label = spotLabel(spot, sport);
   const isSelected = selected?.kind === "spot" && sameSpot(selected.spot, spot);
 
   return {

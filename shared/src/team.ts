@@ -65,7 +65,10 @@ export function newTeam(
 
 export function emptyUnit(sport: SportDef, unitId: string, variant?: string): UnitState {
   const unit = sport.units.find((u) => u.id === unitId)!;
-  const v = unit.variants.some((x) => x.id === variant) ? variant : defaultVariant(unit);
+  const v =
+    unit.variants.length > 1 && unit.variants.some((x) => x.id === variant)
+      ? variant
+      : defaultVariant(unit);
   const formation = unit.defaultFormation?.[v ?? unit.variants[0]!.id];
   return {
     depth: emptyDepth(unitRows(unit, v)),

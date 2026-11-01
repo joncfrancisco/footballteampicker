@@ -114,6 +114,10 @@ describe("TeamInput + teamErrors", () => {
         roster,
       ),
     ).toContain("I-Formation Pro has no gun option");
+    const { formation: _f, ...noFormation } = t.units.defense!;
+    expect(teamErrors({ ...t, units: { ...t.units, defense: noFormation } }, roster)).toContain(
+      "Missing defense formation",
+    );
     const twice = structuredClone(t);
     twice.units.offense!.depth.QB![0] = "ahri";
     twice.units.defense!.depth.MLB![0] = "ahri";

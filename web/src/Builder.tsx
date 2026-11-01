@@ -288,7 +288,7 @@ function StatusBar({ notice }: { notice: string }) {
         <span>
           {selected.kind === "pool"
             ? `${name} selected: tap a spot to place them.`
-            : `${name} (${spotLabel(selected.spot)}) selected: tap a spot to move them.`}
+            : `${name} (${spotLabel(selected.spot, sportOf(team))}) selected: tap a spot to move them.`}
         </span>
         {selected.kind === "spot" && (
           <button type="button" onClick={removeSelected}>

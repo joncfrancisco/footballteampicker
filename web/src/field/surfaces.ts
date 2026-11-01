@@ -57,8 +57,8 @@ export type SurfaceDef = {
   exportView?(unit: string): { yMin: number; yMax: number };
 };
 
-/** One pane per unit that has a formation, showing the whole surface. */
-function wholePanes(away: 1 | -1) {
+/** One pane per unit that has a formation, showing rows yMin–yMax of the surface. */
+function wholePanes(away: 1 | -1, view = { yMin: 0, yMax: 100 }) {
   return (sport: SportDef, team: Team): Pane[] =>
     sport.units.flatMap((u) => {
       const state = team.units[u.id];
@@ -70,8 +70,7 @@ function wholePanes(away: 1 | -1) {
           label: u.name,
           formation,
           slots: slotsFor(formation, state.align),
-          yMin: 0,
-          yMax: 100,
+          ...view,
           away,
         },
       ];
@@ -140,9 +139,67 @@ const GRIDIRON: SurfaceDef = {
   exportView: (unit) => (unit === "offense" ? { yMin: 47, yMax: 71 } : { yMin: 21, yMax: 51 }),
 };
 
+// ---- Pitch -----------------------------------------------------------------------------
+
+/**
+ * Soccer, own goal at the bottom. 100 units across is the 68 m width and 100 along is the
+ * 105 m length, so 1 m is 1.47 units across and 0.95 along.
+ */
+const PITCH_ASPECT = 1.3;
+const mx = (m: number) => (m / 68) * 100;
+const my = (m: number) => (m / 105) * 100;
+
+function penaltyEnd(goalY: number, dir: 1 | -1): Mark[] {
+  const box = { w: mx(40.32), d: my(16.5) };
+  const six = { w: mx(18.32), d: my(5.5) };
+  const spotY = goalY - dir * my(11);
+  const edge = goalY - dir * box.d;
+  return [
+    { kind: "rect", x: 50 - box.w / 2, y: Math.min(goalY, edge), w: box.w, h: box.d },
+    {
+      kind: "rect",
+      x: 50 - six.w / 2,
+      y: Math.min(goalY, goalY - dir * six.d),
+      w: six.w,
+      h: six.d,
+    },
+    { kind: "circle", cx: 50, cy: spotY, r: 0.6, fill: true },
+    // The D: the part of the 9.15 m circle round the spot outside the box.
+    dir === 1
+      ? { kind: "arc", cx: 50, cy: spotY, r: mx(9.15), from: 210, to: 330 }
+      : { kind: "arc", cx: 50, cy: spotY, r: mx(9.15), from: 30, to: 150 },
+    {
+      kind: "rect",
+      x: 50 - mx(7.32) / 2,
+      y: dir === 1 ? goalY : goalY - 1.5,
+      w: mx(7.32),
+      h: 1.5,
+    },
+  ];
+}
+
+const PITCH: SurfaceDef = {
+  id: "pitch",
+  noun: "Pitch",
+  aspect: PITCH_ASPECT,
+  background: "var(--turf)",
+  paint: GRIDIRON.paint,
+  marks: () => [
+    { kind: "rect", x: 2, y: 2, w: 96, h: 96 },
+    { kind: "line", x1: 2, y1: 50, x2: 98, y2: 50 },
+    { kind: "circle", cx: 50, cy: 50, r: mx(9.15) },
+    { kind: "circle", cx: 50, cy: 50, r: 0.6, fill: true },
+    ...penaltyEnd(98, 1),
+    ...penaltyEnd(2, -1),
+  ],
+  height: aspectHeight(PITCH_ASPECT),
+  // From just short of the far box to the own goal line: the whole shape of the team.
+  panes: wholePanes(1, { yMin: 14, yMax: 100 }),
+};
+
 export const SURFACES: Record<SurfaceId, SurfaceDef | undefined> = {
   gridiron: GRIDIRON,
-  pitch: undefined,
+  pitch: PITCH,
   court: undefined,
   rink: undefined,
   diamond: undefined,
@@ -153,6 +210,3 @@ export function surfaceOf(sport: SportDef): SurfaceDef {
   if (!surface) throw new Error(`No ${sport.surface} surface`);
   return surface;
 }
-
-/** Shared by fixed-aspect surfaces (every sport but football). */
-export const whole = { panes: wholePanes, height: aspectHeight };
