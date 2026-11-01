@@ -217,7 +217,7 @@ describe("teams", () => {
     const saved = publish.json(`m/t/${id}.json`) as Record<string, any>;
     expect(publish.objects.get(`m/t/${id}.json`)!.cacheControl).toContain("immutable");
     expect(saved).toMatchObject({
-      schema: 1,
+      schema: 2,
       id,
       listId: "demo-lol",
       listVersion: 0,
@@ -231,13 +231,13 @@ describe("teams", () => {
     });
     expect(saved.disclaimer).toMatch(/Riot/);
     expect(PublishedTeam.parse(saved).atlas.src).toBe(`/m/seeds/demo-lol/${seed.atlas.src}`);
-    expect(saved.staff.HC).toBe("Zed");
-    expect(saved).not.toHaveProperty("specialTeams");
+    expect(saved.sections.staff.HC).toEqual(["Zed"]);
+    expect(saved.sections).not.toHaveProperty("specialTeams");
   });
 
   it("rejects a team that breaks the rules, with the reasons", async () => {
     const t = lolTeam();
-    t.defense.depth.FS![0] = "Ahri"; // one-way, already QB1
+    t.units.defense!.depth.FS![0] = "Ahri"; // one-way, already QB1
     const r = await call("POST", "/api/teams", t);
     expect(r).toEqual({
       status: 422,
@@ -245,9 +245,28 @@ describe("teams", () => {
     });
   });
 
+  it("still accepts a v1 football body and publishes it as schema 2 (#44)", async () => {
+    const t = lolTeam();
+    const v1 = {
+      title: t.title,
+      listId: t.listId,
+      offense: { depth: t.units.offense!.depth, formation: t.units.offense!.formation },
+      defense: { front: "4-3", depth: t.units.defense!.depth, formation: "43-over" },
+    };
+    const r = await call("POST", "/api/teams", v1);
+    expect(r.status).toBe(201);
+    const saved = publish.json(`m/t/${r.body.id}.json`) as Record<string, unknown>;
+    expect(saved).toMatchObject({
+      schema: 2,
+      sport: "football",
+      units: { defense: { variant: "4-3" } },
+    });
+    expect(saved).not.toHaveProperty("offense");
+  });
+
   it("rejects characters that aren't in the list and unknown lists", async () => {
     const t = lolTeam();
-    t.offense.depth.RB![0] = "Nobody";
+    t.units.offense!.depth.RB![0] = "Nobody";
     expect((await call("POST", "/api/teams", t)).body.errors).toContain(
       'Unknown character "Nobody"',
     );

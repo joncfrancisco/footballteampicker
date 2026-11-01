@@ -1,8 +1,9 @@
 import { z } from "zod";
-import { formationById } from "./formations";
 import { shapeErrors, violations, type Roster } from "./lineup";
 import { FRONTS, STAFF_ROLES } from "./positions";
-import type { Team } from "./team";
+import { findFormation, unitFormations } from "./sport";
+import { SPORT_IDS, sportOf } from "./sports";
+import { upgradeTeam, type Team } from "./team";
 
 /**
  * Request bodies the API accepts (#9). Text is sanitised (control characters stripped,
@@ -18,9 +19,11 @@ const required = (max: number) => text(max).pipe(z.string().min(1));
 
 const id = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/);
 const charRef = id.nullable();
-const depth = z.record(z.string().regex(/^[A-Z]{1,4}$/), z.array(charRef).max(6));
+const depth = z.record(z.string().regex(/^[A-Z0-9]{1,4}$/), z.array(charRef).max(7));
+const key = z.string().regex(/^[A-Za-z]{1,16}$/);
 
-export const TeamInput = z.object({
+/** Before #44 every team was football, in this shape. Still accepted, and upgraded. */
+export const TeamV1Input = z.object({
   title: required(80),
   listId: id,
   /** The list version this team was built against; checked on save. */
@@ -33,6 +36,42 @@ export const TeamInput = z.object({
     .strict()
     .optional(),
 });
+
+export const TeamV2Input = z
+  .object({
+    schemaVersion: z.literal(2),
+    sport: z.enum(SPORT_IDS),
+    title: required(80),
+    listId: id,
+    listVersion: z.number().int().nonnegative().optional(),
+    units: z
+      .record(
+        key,
+        z
+          .object({
+            depth,
+            formation: id.optional(),
+            variant: z
+              .string()
+              .regex(/^[A-Za-z0-9-]{1,16}$/)
+              .optional(),
+            align: z.enum(["under", "gun"]).optional(),
+          })
+          .strict(),
+      )
+      .refine((units) => Object.keys(units).length <= 4, "4 units maximum"),
+    sections: z
+      .record(key, depth)
+      .refine((sections) => Object.keys(sections).length <= 4, "4 sections maximum")
+      .optional(),
+  })
+  .strict();
+
+/**
+ * A team body in either shape, always parsed to the current one. The sport picks the rules
+ * that `teamErrors` applies.
+ */
+export const TeamInput = z.union([TeamV2Input, TeamV1Input.transform((t) => upgradeTeam(t))]);
 export type TeamInput = z.infer<typeof TeamInput>;
 
 export const ListCharacterInput = z.object({
@@ -94,17 +133,30 @@ export const ReportInput = z.object({
 
 /**
  * Everything wrong with a parsed team against its list, using the same rules as the builder:
- * formations exist and match the side and front, rows match the templates, and the lineup
- * rules hold. Empty means valid.
+ * formations exist and match their unit and variant, rows match the templates, and the
+ * lineup rules hold. Empty means valid.
  */
 export function teamErrors(team: Team, roster: Roster): string[] {
+  const sport = sportOf(team);
   const out: string[] = [];
-  const off = formationById(team.offense.formation);
-  const def = formationById(team.defense.formation);
-  if (off?.side !== "offense") out.push(`Unknown offensive formation "${team.offense.formation}"`);
-  if (def?.side !== "defense" || def.front !== team.defense.front)
-    out.push(`"${team.defense.formation}" isn't a ${team.defense.front} formation`);
-  if (team.offense.qb && !off?.altQb && team.offense.qb !== off?.qb)
-    out.push(`${off?.name ?? "That formation"} has no ${team.offense.qb} option`);
+  for (const unit of sport.units) {
+    const state = team.units[unit.id];
+    if (!state) continue; // reported by shapeErrors
+    const name = unit.name.toLowerCase();
+    const hasFormations = unitFormations(sport, unit.id).length > 0;
+    if (state.formation === undefined) {
+      if (hasFormations) out.push(`Missing ${name} formation`);
+      continue;
+    }
+    const f = findFormation(sport, state.formation);
+    if (f?.unit !== unit.id) {
+      out.push(`Unknown ${name} formation "${state.formation}"`);
+      continue;
+    }
+    if (f.variant !== undefined && f.variant !== state.variant)
+      out.push(`"${f.id}" isn't a ${state.variant} formation`);
+    if (state.align && !f.altQb && state.align !== f.qb)
+      out.push(`${f.name} has no ${state.align} option`);
+  }
   return [...out, ...shapeErrors(team), ...violations(team, roster)];
 }

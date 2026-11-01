@@ -11,7 +11,7 @@ import {
   setSection,
   shapeErrors,
   spotsOf,
-  switchFront,
+  switchVariant,
   usage,
   violations,
   type Result,
@@ -47,12 +47,12 @@ function team(...placements: [string, Spot][]): Team {
 describe("place", () => {
   it("puts a pool character in an empty spot", () => {
     const t = team(["ahri", O("QB", 1)]);
-    expect(t.offense.depth.QB).toEqual(["ahri", null, null]);
+    expect(t.units.offense!.depth.QB).toEqual(["ahri", null, null]);
   });
 
   it("replaces the occupant, who returns to the pool", () => {
     const t = ok(place(team(["ahri", O("QB", 1)]), roster, "jinx", O("QB", 1)));
-    expect(t.offense.depth.QB![0]).toBe("jinx");
+    expect(t.units.offense!.depth.QB![0]).toBe("jinx");
     expect(spotsOf(t, "ahri")).toEqual([]);
   });
 
@@ -89,14 +89,14 @@ describe("move", () => {
       ["leona", O("WR", 4)],
     );
     const next = ok(move(t, roster, O("WR", 4), O("WR", 2)));
-    expect(next.offense.depth.WR).toEqual(["ahri", "leona", "jinx", "zed", null, null]);
+    expect(next.units.offense!.depth.WR).toEqual(["ahri", "leona", "jinx", "zed", null, null]);
   });
 
   it("swaps across rows", () => {
     const t = team(["ahri", O("QB", 1)], ["jinx", O("WR", 1)]);
     const next = ok(move(t, roster, O("QB", 1), O("WR", 1)));
-    expect(next.offense.depth.QB![0]).toBe("jinx");
-    expect(next.offense.depth.WR![0]).toBe("ahri");
+    expect(next.units.offense!.depth.QB![0]).toBe("jinx");
+    expect(next.units.offense!.depth.WR![0]).toBe("ahri");
   });
 
   it("moves into an empty spot in another row", () => {
@@ -137,7 +137,7 @@ describe("remove", () => {
   });
 });
 
-describe("switchFront", () => {
+describe("switchVariant (front)", () => {
   it("keeps shared rows, maps LDT to NT and linebackers in order, pools the rest", () => {
     const t = team(
       ["ahri", D("LDE", 1)],
@@ -146,23 +146,23 @@ describe("switchFront", () => {
       ["leona", D("SLB", 2)],
       ["braum", D("FS", 1)],
     );
-    const { team: next, moved } = switchFront(t, "3-4");
-    expect(next.defense.front).toBe("3-4");
-    expect(next.defense.formation).toBe("34-okie");
-    expect(next.defense.depth.LDE![0]).toBe("ahri");
-    expect(next.defense.depth.NT![0]).toBe("jinx");
-    expect(next.defense.depth.RILB![1]).toBe("leona");
-    expect(next.defense.depth.FS![0]).toBe("braum");
+    const { team: next, moved } = switchVariant(t, "defense", "3-4");
+    expect(next.units.defense!.variant).toBe("3-4");
+    expect(next.units.defense!.formation).toBe("34-okie");
+    expect(next.units.defense!.depth.LDE![0]).toBe("ahri");
+    expect(next.units.defense!.depth.NT![0]).toBe("jinx");
+    expect(next.units.defense!.depth.RILB![1]).toBe("leona");
+    expect(next.units.defense!.depth.FS![0]).toBe("braum");
     expect(moved).toEqual(["zed"]);
     expect(shapeErrors(next)).toEqual([]);
     expect(movedNotice(moved)).toBe("1 player moved to the pool");
   });
 
   it("maps back from 3-4, pooling ROLB", () => {
-    const t34 = switchFront(newTeam({ id: "l", ip: "X" }), "3-4").team;
+    const t34 = switchVariant(newTeam({ id: "l", ip: "X" }), "defense", "3-4").team;
     const t = ok(place(ok(place(t34, roster, "ahri", D("NT", 1))), roster, "jinx", D("ROLB", 1)));
-    const { team: next, moved } = switchFront(t, "4-3");
-    expect(next.defense.depth.LDT![0]).toBe("ahri");
+    const { team: next, moved } = switchVariant(t, "defense", "4-3");
+    expect(next.units.defense!.depth.LDT![0]).toBe("ahri");
     expect(moved).toEqual(["jinx"]);
     expect(movedNotice(["a", "b"])).toBe("2 players moved to the pool");
   });
@@ -171,9 +171,9 @@ describe("switchFront", () => {
 describe("violations and shape", () => {
   it("flags duplicates on one side, one-way players on both sides and unknown ids", () => {
     const t = newTeam({ id: "l", ip: "X" });
-    t.offense.depth.QB = ["ahri", "ahri", null];
-    t.defense.depth.MLB = ["ahri", null];
-    t.offense.depth.RB = ["ghost", null, null];
+    t.units.offense!.depth.QB = ["ahri", "ahri", null];
+    t.units.defense!.depth.MLB = ["ahri", null];
+    t.units.offense!.depth.RB = ["ghost", null, null];
     expect(violations(t, roster)).toEqual([
       'Unknown character "ghost"',
       "Ahri already has a spot on offense",
@@ -183,8 +183,8 @@ describe("violations and shape", () => {
 
   it("flags rows that don't match the front's template", () => {
     const t = newTeam({ id: "l", ip: "X" });
-    t.defense.depth.NT = [null, null];
-    t.offense.depth.WR = [null];
+    t.units.defense!.depth.NT = [null, null];
+    t.units.offense!.depth.WR = [null];
     expect(shapeErrors(t)).toEqual(["offense WR must have 6 spots", "defense has no NT row"]);
   });
 });
@@ -208,8 +208,8 @@ describe("pool helpers", () => {
 
   it("auto-fills empty spots from unused characters, keeping existing ones, never two-way", () => {
     const t = autoFill(team(["braum", O("QB", 1)]), ids);
-    expect(t.offense.depth.QB).toEqual(["braum", "ahri", "jinx"]);
-    expect(t.offense.depth.RB).toEqual(["leona", "zed", null]);
+    expect(t.units.offense!.depth.QB).toEqual(["braum", "ahri", "jinx"]);
+    expect(t.units.offense!.depth.RB).toEqual(["leona", "zed", null]);
     expect(spotsOf(t, "braum")).toEqual([O("QB", 1)]);
     expect(violations(t, roster)).toEqual([]);
   });
@@ -222,7 +222,10 @@ describe("pool helpers", () => {
     );
     const t = randomize(newTeam({ id: "l", ip: "X" }), [...big.keys()], rng);
     expect(violations(t, big)).toEqual([]);
-    const placed = [...Object.values(t.offense.depth), ...Object.values(t.defense.depth)]
+    const placed = [
+      ...Object.values(t.units.offense!.depth),
+      ...Object.values(t.units.defense!.depth),
+    ]
       .flat()
       .filter((id) => id !== null);
     expect(placed).toHaveLength(52);
@@ -241,9 +244,9 @@ describe("special teams and staff (#22)", () => {
 
   it("starts off and turns on empty, off removes the section entirely", () => {
     const t = newTeam({ id: "l", ip: "X" });
-    expect(t).not.toHaveProperty("specialTeams");
+    expect(t).not.toHaveProperty("sections");
     const on = setSection(setSection(t, "specialTeams", true), "staff", true);
-    expect(on.specialTeams).toEqual({
+    expect(on.sections!.specialTeams).toEqual({
       K: [null],
       P: [null],
       LS: [null],
@@ -251,9 +254,15 @@ describe("special teams and staff (#22)", () => {
       KR: [null, null],
       PR: [null, null],
     });
-    expect(on.staff).toEqual({ HC: null, OC: null, DC: null, STC: null, GM: null });
+    expect(on.sections!.staff).toEqual({
+      HC: [null],
+      OC: [null],
+      DC: [null],
+      STC: [null],
+      GM: [null],
+    });
     expect(shapeErrors(on)).toEqual([]);
-    expect(setSection(on, "staff", false)).not.toHaveProperty("staff");
+    expect(setSection(on, "staff", false).sections).not.toHaveProperty("staff");
   });
 
   it("lets anyone play special teams on top of an offense or defense spot", () => {
@@ -278,8 +287,8 @@ describe("special teams and staff (#22)", () => {
     expect(spotsOf(t, "ahri")).toEqual([ST("P", 1)]);
 
     const bad = withSections();
-    bad.specialTeams!.K = ["ahri"];
-    bad.specialTeams!.P = ["ahri"];
+    bad.sections!.specialTeams!.K = ["ahri"];
+    bad.sections!.specialTeams!.P = ["ahri"];
     expect(violations(bad, roster)).toEqual(["Ahri already has a special teams spot"]);
   });
 
@@ -307,10 +316,10 @@ describe("special teams and staff (#22)", () => {
     expect(spotsOf(moved, "ahri")).toEqual([STAFF("GM")]);
 
     const bad = withSections();
-    bad.staff!.HC = "ahri";
-    bad.staff!.OC = "ahri";
-    bad.offense.depth.QB![0] = "jinx";
-    bad.staff!.DC = "jinx";
+    bad.sections!.staff!.HC = ["ahri"];
+    bad.sections!.staff!.OC = ["ahri"];
+    bad.units.offense!.depth.QB![0] = "jinx";
+    bad.sections!.staff!.DC = ["jinx"];
     expect(violations(bad, roster)).toEqual([
       "Jinx is on staff and can't play",
       "Ahri already has a staff role",
@@ -320,7 +329,7 @@ describe("special teams and staff (#22)", () => {
   it("swaps staff roles", () => {
     const t = withSections(["ahri", STAFF("HC")], ["jinx", STAFF("OC")]);
     const next = ok(move(t, roster, STAFF("HC"), STAFF("OC")));
-    expect(next.staff).toMatchObject({ HC: "jinx", OC: "ahri" });
+    expect(next.sections!.staff).toMatchObject({ HC: ["jinx"], OC: ["ahri"] });
   });
 
   it("auto-fill leaves staff off the field", () => {
@@ -335,7 +344,7 @@ describe("special teams and staff (#22)", () => {
 
   it("flags bad section shapes", () => {
     const t = withSections();
-    t.specialTeams!.KR = [null];
+    t.sections!.specialTeams!.KR = [null];
     expect(shapeErrors(t)).toEqual(["special teams KR must have 2 spots"]);
   });
 });

@@ -18,7 +18,10 @@ import {
   move,
   place,
   remove,
+  sideName,
+  sportOf,
   usage,
+  type SportDef,
   type CharId,
   type Result,
   type Spot,
@@ -27,7 +30,7 @@ import {
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
 import type { LoadedList } from "../lists";
 import { Sprite } from "../Sprite";
-import { POOL_DROP, parsePoolId, parseSpotId, sideName, spotLabel } from "./ids";
+import { POOL_DROP, parsePoolId, parseSpotId, spotLabel } from "./ids";
 import { jumpToNearestSpot } from "./keyboard";
 
 export type Selection = { kind: "pool"; id: CharId } | { kind: "spot"; spot: Spot } | null;
@@ -36,6 +39,7 @@ type LineupValue = {
   readOnly: boolean;
   list: LoadedList;
   team: Team;
+  sport: SportDef;
   /** Sides each character plays. */
   sides: Map<CharId, Set<Spot["side"]>>;
   selected: Selection;
@@ -123,6 +127,7 @@ export function Lineup({
     readOnly,
     list,
     team,
+    sport: sportOf(team),
     sides: usage(team),
     selected,
     selectPool,
@@ -147,7 +152,7 @@ export function Lineup({
     if (id === undefined) return "nowhere";
     if (id === POOL_DROP) return "the pool";
     const spot = parseSpotId(id);
-    return spot ? `${sideName(spot.side)} ${spotLabel(spot)}` : "the pool";
+    return spot ? `${sideName(sportOf(team), spot.side)} ${spotLabel(spot)}` : "the pool";
   };
   const activeName = (id: string | number) => {
     const spot = parseSpotId(id);

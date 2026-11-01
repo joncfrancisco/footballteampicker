@@ -6,3 +6,5 @@ export * from "./lineup";
 export * from "./schemas";
 export * from "./catalog";
 export * from "./sharing";
+export * from "./sport";
+export * from "./sports";

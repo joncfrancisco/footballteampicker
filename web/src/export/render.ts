@@ -1,12 +1,12 @@
 import {
   LOS_Y,
-  SPECIAL_TEAMS_ROWS,
-  STAFF_ROLES,
   at,
-  formationById,
+  findFormation,
   formationLabel,
-  rowsFor,
   slotsFor,
+  sportOf,
+  unitRows,
+  type SectionDef,
   type Character,
   type Slot,
   type Spot,
@@ -114,8 +114,13 @@ class Drawer {
   // ---- Layouts -------------------------------------------------------------------------
 
   field(team: Team, layout: "field" | "offense" | "defense", url?: string): Rendered {
-    const offense = formationById(team.offense.formation)!;
-    const defense = formationById(team.defense.formation)!;
+    const sport = sportOf(team);
+    const offense = findFormation(sport, team.units.offense!.formation)!;
+    const defense = findFormation(sport, team.units.defense!.formation)!;
+    const staff = sport.sections.find((s) => s.kind === "staff" && team.sections?.[s.id]);
+    const situational = sport.sections.find(
+      (s) => s.kind === "situational" && team.sections?.[s.id],
+    );
     const both = layout === "field";
     const [W, H] = both ? [1600, 900] : [1080, 1350];
     this.begin(W, H);
@@ -128,21 +133,27 @@ class Drawer {
     let top = this.header(team.title, subtitle, W);
     const bottom = this.footer(W, H, url);
 
-    if (team.staff) top = this.staffStrip(team, { x: PAD, y: top, w: W - 2 * PAD, h: 0 }) + 12;
+    if (staff) top = this.staffStrip(team, staff, { x: PAD, y: top, w: W - 2 * PAD, h: 0 }) + 12;
 
     let fieldArea: Rect = { x: PAD, y: top, w: W - 2 * PAD, h: bottom - top };
-    if (team.specialTeams) {
+    if (situational) {
       if (both) {
         const panelW = 300;
-        this.specialTeamsPanel(
+        this.sectionPanel(
           team,
+          situational,
           { x: W - PAD - panelW, y: top, w: panelW, h: bottom - top },
           1,
         );
         fieldArea = { ...fieldArea, w: fieldArea.w - panelW - 16 };
       } else {
         const panelH = 4 * 58 + 44;
-        this.specialTeamsPanel(team, { x: PAD, y: bottom - panelH, w: W - 2 * PAD, h: panelH }, 2);
+        this.sectionPanel(
+          team,
+          situational,
+          { x: PAD, y: bottom - panelH, w: W - 2 * PAD, h: panelH },
+          2,
+        );
         fieldArea = { ...fieldArea, h: fieldArea.h - panelH - 16 };
       }
     }
@@ -165,14 +176,15 @@ class Drawer {
       this.fieldSide(
         team,
         "offense",
-        slotsFor(offense, team.offense.qb),
+        slotsFor(offense, team.units.offense!.align),
         { ...fieldArea, y: fieldArea.y + defH, h: fieldArea.h - defH },
         VIEW.faceOffense,
         tile,
       );
     } else {
       const side = layout;
-      const slots = side === "offense" ? slotsFor(offense, team.offense.qb) : defense.slots;
+      const slots =
+        side === "offense" ? slotsFor(offense, team.units.offense!.align) : defense.slots;
       this.fieldSide(team, side, slots, fieldArea, SINGLE_VIEW[side], tile);
     }
     return { canvas: this.canvas, portraits: this.portraits };
@@ -181,21 +193,23 @@ class Drawer {
   depth(team: Team, url?: string): Rendered {
     const W = 1080;
     const ROW = 46;
+    const sport = sportOf(team);
     const sections: { title: string; side: Spot["side"]; rows: [string, number][] }[] = [];
-    if (team.staff)
-      sections.push({ title: "Staff", side: "staff", rows: STAFF_ROLES.map((r) => [r, 1]) });
-    sections.push({ title: "Offense", side: "offense", rows: Object.entries(rowsFor("offense")) });
-    sections.push({
-      title: `Defense (${team.defense.front})`,
-      side: "defense",
-      rows: Object.entries(rowsFor("defense", team.defense.front)),
-    });
-    if (team.specialTeams)
+    const on = (kind: SectionDef["kind"]) =>
+      sport.sections.filter((s) => s.kind === kind && team.sections?.[s.id]);
+    for (const s of on("staff"))
+      sections.push({ title: s.name, side: s.id, rows: Object.entries(s.rows) });
+    for (const u of sport.units) {
+      const state = team.units[u.id]!;
+      const variant = u.variants.length > 1 && u.variants.find((v) => v.id === state.variant);
       sections.push({
-        title: "Special teams",
-        side: "specialTeams",
-        rows: Object.entries(SPECIAL_TEAMS_ROWS),
+        title: variant ? `${u.name} (${variant.name})` : u.name,
+        side: u.id,
+        rows: Object.entries(unitRows(u, state.variant)),
       });
+    }
+    for (const s of on("situational"))
+      sections.push({ title: s.name, side: s.id, rows: Object.entries(s.rows) });
 
     const body = sections.reduce((h, s) => h + 40 + s.rows.length * ROW + 20, 0);
     const H = Math.max(1350, HEADER_H + body + FOOTER_H);
@@ -204,7 +218,8 @@ class Drawer {
     this.footer(W, H, url);
 
     const labelW = 70;
-    const cellW = (W - 2 * PAD - labelW) / 6;
+    const cellW =
+      (W - 2 * PAD - labelW) / Math.max(6, ...sections.flatMap((s) => s.rows.map(([, n]) => n)));
     const ctx = this.ctx;
     for (const s of sections) {
       ctx.fillStyle = C.fg;
@@ -343,20 +358,25 @@ class Drawer {
     ctx.textAlign = "left";
   }
 
-  private staffStrip(team: Team, area: Rect): number {
+  private staffStrip(team: Team, section: SectionDef, area: Rect): number {
     const h = 58;
     this.panelTitle("Front office", area.x, area.y);
     const y = area.y + 28;
-    const w = (area.w - 4 * 8) / 5;
-    STAFF_ROLES.forEach((role, i) => {
-      this.cell({ x: area.x + i * (w + 8), y, w, h: h - 6 }, this.char(team.staff![role]), role);
+    const roles = Object.keys(section.rows);
+    const w = (area.w - (roles.length - 1) * 8) / roles.length;
+    roles.forEach((role, i) => {
+      this.cell(
+        { x: area.x + i * (w + 8), y, w, h: h - 6 },
+        this.char(team.sections![section.id]![role]?.[0] ?? null),
+        role,
+      );
     });
     return y + h;
   }
 
-  private specialTeamsPanel(team: Team, area: Rect, columns: 1 | 2) {
-    this.panelTitle("Special teams", area.x, area.y);
-    const spots = Object.entries(SPECIAL_TEAMS_ROWS).flatMap(([pos, n]) =>
+  private sectionPanel(team: Team, section: SectionDef, area: Rect, columns: 1 | 2) {
+    this.panelTitle(section.name, area.x, area.y);
+    const spots = Object.entries(section.rows).flatMap(([pos, n]) =>
       Array.from({ length: n }, (_, index) => ({ pos, index })),
     );
     const rowsPerCol = Math.ceil(spots.length / columns);
@@ -368,7 +388,7 @@ class Drawer {
       const row = i % rowsPerCol;
       this.cell(
         { x: area.x + col * (w + gap), y: area.y + 28 + row * h, w, h: h - 6 },
-        this.char(team.specialTeams?.[pos]?.[index] ?? null),
+        this.char(team.sections?.[section.id]?.[pos]?.[index] ?? null),
         `${pos}${index + 1}`,
       );
     });

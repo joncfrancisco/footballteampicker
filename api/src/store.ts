@@ -27,9 +27,10 @@ export type StoredList = Omit<ListInput, "atlas"> & {
 export type CharacterSnapshot = { name: string; twoWay: boolean; atlasIndex: number };
 
 /** A saved team (`TEAM#<id>` / `META`): immutable once written. */
+/** Schema 1 teams (football, before #44) are stored in the v1 shape; readers upgrade them. */
 export type StoredTeam = Team & {
   hidden?: boolean;
-  schema: 1;
+  schema: 2;
   id: string;
   listVersion: number;
   listTitle: string;
