@@ -1,34 +1,67 @@
+/* Archivo and Archivo Black (SIL OFL, see fonts/), Latin subset, served with the site. */
+@font-face {
+  font-family: "Archivo";
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("./fonts/archivo-latin.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Archivo Black";
+  font-weight: 400;
+  font-display: swap;
+  src: url("./fonts/archivo-black-latin.woff2") format("woff2");
+}
+
+/*
+ * Trading-card look: thick ink outlines, hard offset shadows, square corners and a bright
+ * colour per sport. `--ink` draws outlines and shadows; text on the bright colours stays dark.
+ */
 :root {
   color-scheme: light dark;
-  font-family: system-ui, sans-serif;
-  --bg: #f6f7f5;
-  --fg: #1c1f1d;
-  --muted: #5d6660;
+  font-family: "Archivo", system-ui, sans-serif;
+  --display: "Archivo Black", "Archivo", system-ui, sans-serif;
+  --bg: #fff6dc;
+  --fg: #111111;
+  --muted: #4a4a4a;
   --surface: #ffffff;
-  --border: #d3d8d4;
-  --accent: #1f6feb;
-  --turf: #2f7a3e;
-  --court: #b9814f;
+  --border: #111111;
+  --ink: #111111;
+  --on-bright: #111111;
+  --accent: #2b59ff;
+  --highlight: #ffd23f;
+  --hot: #ff5c39;
+  --line: 3px solid var(--ink);
+  --shadow: 4px 4px 0 var(--ink);
+  --shadow-sm: 3px 3px 0 var(--ink);
+  --sport-football: #ff5c39;
+  --sport-soccer: #9be564;
+  --sport-basketball: #ffd23f;
+  --sport-hockey: #7fd1ff;
+  --sport-baseball: #f7a8ff;
+  --turf: #25a244;
+  --court: #c98a4b;
   --ice: #eef3f6;
-  --turf-line: rgb(255 255 255 / 0.55);
+  --turf-line: rgb(255 255 255 / 0.6);
   --los: #5aa9ff;
-  --slot-empty: rgb(255 255 255 / 0.14);
-  --slot-border: rgb(255 255 255 / 0.7);
-  --slot-filled: #10331b;
+  --slot-empty: rgb(255 255 255 / 0.16);
+  --slot-border: rgb(255 255 255 / 0.8);
+  --slot-filled: #ffffff;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #141715;
-    --fg: #e7ebe8;
-    --muted: #9aa49e;
-    --surface: #1d2120;
-    --border: #343a37;
-    --accent: #6ea8ff;
-    --turf: #22582d;
+    --bg: #17140f;
+    --fg: #f3ead2;
+    --muted: #b9b09a;
+    --surface: #221e17;
+    --border: #f3ead2;
+    --ink: #f3ead2;
+    --accent: #7f9bff;
+    --turf: #1d7a35;
     --court: #8a5f3a;
     --ice: #c9d4db;
-    --slot-filled: #0b2213;
+    --slot-filled: #221e17;
   }
 }
 
@@ -111,7 +144,7 @@ main,
   font-weight: 600;
   padding: 6px 8px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 0;
   background: var(--surface);
   color: inherit;
 }
@@ -122,7 +155,7 @@ button {
   min-height: 44px;
   padding: 0 10px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 0;
   background: var(--surface);
   color: inherit;
 }
@@ -152,16 +185,16 @@ button[aria-pressed="true"]:not(.slot, .depth-cell, .section-tile),
 .field {
   position: relative;
   background: var(--turf);
-  border-radius: 8px;
+  border-radius: 0;
   overflow: hidden;
 }
 
 .facing .field-defense {
-  border-radius: 8px 8px 0 0;
+  border-radius: 0;
 }
 
 .facing .field-offense {
-  border-radius: 0 0 8px 8px;
+  border-radius: 0;
 }
 
 .field-lines {
@@ -226,7 +259,7 @@ button[aria-pressed="true"]:not(.slot, .depth-cell, .section-tile),
   justify-content: center;
   gap: 2px;
   border: 1.5px dashed var(--slot-border);
-  border-radius: 8px;
+  border-radius: 0;
   background: var(--slot-empty);
   color: #fff;
   text-align: center;
@@ -262,7 +295,7 @@ button[aria-pressed="true"]:not(.slot, .depth-cell, .section-tile),
 .sprite {
   display: block;
   flex: none;
-  border-radius: 4px;
+  border-radius: 0;
   background-repeat: no-repeat;
 }
 
@@ -271,11 +304,11 @@ button[aria-pressed="true"]:not(.slot, .depth-cell, .section-tile),
 }
 
 .view-toggle button:first-child {
-  border-radius: 6px 0 0 6px;
+  border-radius: 0;
 }
 
 .view-toggle button:last-child {
-  border-radius: 0 6px 6px 0;
+  border-radius: 0;
   margin-left: -1px;
 }
 
@@ -344,7 +377,7 @@ button[aria-pressed="true"]:not(.slot, .depth-cell, .section-tile),
 .depth-cell {
   height: 48px;
   border: 1px dashed var(--border);
-  border-radius: 6px;
+  border-radius: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -392,7 +425,7 @@ button[aria-pressed="true"]:not(.slot, .depth-cell, .section-tile),
   align-items: center;
   gap: 6px;
   padding: 4px 8px 4px 4px;
-  border-radius: 8px;
+  border-radius: 0;
   background: var(--surface);
   border: 1px solid var(--accent);
   box-shadow: 0 6px 18px rgb(0 0 0 / 0.25);
@@ -446,7 +479,7 @@ button[aria-pressed="true"]:not(.slot, .depth-cell, .section-tile),
   align-items: center;
   gap: 8px;
   padding: 6px 10px;
-  border-radius: 8px;
+  border-radius: 0;
   background: color-mix(in srgb, var(--accent) 12%, var(--surface));
   font-size: 0.9rem;
 }
@@ -477,7 +510,7 @@ button[aria-pressed="true"]:not(.slot, .depth-cell, .section-tile),
   gap: 8px;
   padding: 12px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 0;
   background: var(--surface);
   overflow: hidden;
 }
@@ -501,7 +534,7 @@ button[aria-pressed="true"]:not(.slot, .depth-cell, .section-tile),
   padding: 0 10px;
   font: inherit;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 0;
   background: var(--bg);
   color: inherit;
 }
@@ -517,7 +550,7 @@ button[aria-pressed="true"]:not(.slot, .depth-cell, .section-tile),
   min-height: 32px;
   padding: 0 8px;
   font-size: 0.8rem;
-  border-radius: 16px;
+  border-radius: 0;
 }
 
 .pool-filters label {
@@ -554,7 +587,7 @@ button[aria-pressed="true"]:not(.slot, .depth-cell, .section-tile),
   gap: 2px;
   padding: 4px 2px;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: 0;
   cursor: grab;
   touch-action: manipulation;
 }
@@ -588,7 +621,7 @@ button[aria-pressed="true"]:not(.slot, .depth-cell, .section-tile),
   position: absolute;
   top: 2px;
   padding: 0 3px;
-  border-radius: 3px;
+  border-radius: 0;
   font-size: 0.6rem;
   font-weight: 700;
   line-height: 1.4;
@@ -672,7 +705,7 @@ button[aria-pressed="true"]:not(.slot, .depth-cell, .section-tile),
 .section-strip {
   padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 0;
   background: var(--surface);
 }
 
@@ -700,7 +733,7 @@ button[aria-pressed="true"]:not(.slot, .depth-cell, .section-tile),
   color: inherit;
   background: transparent;
   border: 1px dashed var(--border);
-  border-radius: 6px;
+  border-radius: 0;
   cursor: pointer;
   touch-action: manipulation;
 }
@@ -727,7 +760,7 @@ button[aria-pressed="true"]:not(.slot, .depth-cell, .section-tile),
   width: 40px;
   height: 40px;
   flex: none;
-  border-radius: 4px;
+  border-radius: 0;
   background: var(--bg);
 }
 
@@ -807,7 +840,7 @@ a {
   min-height: 44px;
   padding: 8px 12px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 0;
   background: var(--surface);
   color: inherit;
 }
@@ -820,7 +853,7 @@ a {
 .list-card {
   padding: 16px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 0;
   background: var(--surface);
 }
 .list-cover {
@@ -858,7 +891,7 @@ a {
   min-height: 44px;
   padding: 0 12px;
   border: 1px solid var(--accent);
-  border-radius: 6px;
+  border-radius: 0;
 }
 
 .share-link {
@@ -877,7 +910,7 @@ a {
   color: inherit;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 0;
 }
 .share-link label {
   max-width: 100%;
@@ -920,7 +953,7 @@ a {
   min-height: 44px;
   padding: 8px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 0;
   color: inherit;
   background: var(--surface);
 }
@@ -936,7 +969,7 @@ a {
   margin: 20px 0;
   padding: 20px;
   border: 2px dashed var(--border);
-  border-radius: 8px;
+  border-radius: 0;
 }
 .editor-characters {
   display: grid;
@@ -950,7 +983,7 @@ a {
   align-items: center;
   padding: 12px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 0;
   background: var(--surface);
 }
 .editor-character label {
@@ -963,7 +996,7 @@ a {
 .editor-portrait {
   width: 64px;
   height: 64px;
-  border-radius: 4px;
+  border-radius: 0;
 }
 .crop-dialog {
   position: fixed;
@@ -976,7 +1009,7 @@ a {
   overflow: auto;
   padding: 24px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 0;
   background: var(--surface);
   box-shadow: 0 0 0 100vmax rgb(0 0 0 / 0.65);
 }
@@ -1013,7 +1046,7 @@ a {
   color: inherit;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 0;
 }
 
 /* ---- Sports (#44) ---- */
@@ -1034,7 +1067,7 @@ a {
 .sport-badge {
   padding: 2px 8px;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--surface);
   color: var(--muted);
   font-size: 0.8rem;
@@ -1068,4 +1101,185 @@ a {
 .order-moves {
   display: flex;
   gap: 4px;
+}
+
+/* ---- Trading-card theme ------------------------------------------------------------- */
+/* Outlines, shadows and type for the shared controls; the rules above handle layout. */
+
+h1,
+h2,
+h3,
+h4,
+.catalog h2,
+.section-strip h2,
+.depth-side caption {
+  font-family: var(--display);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+.site-header h1 a {
+  display: inline-block;
+  padding: 2px 10px;
+  border: var(--line);
+  background: var(--highlight);
+  color: var(--on-bright);
+  font-size: 1.6rem;
+  text-decoration: none;
+  box-shadow: var(--shadow);
+  transform: rotate(-1.5deg);
+  margin-bottom: 8px;
+}
+
+a {
+  color: inherit;
+  font-weight: 700;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+button:not(.slot, .depth-cell, .section-tile, .pool-card),
+select,
+.team-title input,
+.catalog input,
+.pool-filters input[type="search"],
+.button-link {
+  border: var(--line);
+  background: var(--surface);
+  color: var(--fg);
+  font-weight: 700;
+}
+
+button:not(.slot, .depth-cell, .section-tile, .pool-card, :disabled),
+select,
+.button-link {
+  box-shadow: var(--shadow-sm);
+}
+
+button:not(.slot, .depth-cell, .section-tile, .pool-card, :disabled):active {
+  transform: translate(3px, 3px);
+  box-shadow: none;
+}
+
+button[aria-pressed="true"]:not(.slot, .depth-cell, .section-tile),
+.tabs button[aria-selected="true"] {
+  border-color: var(--ink);
+  background: var(--hot);
+  color: var(--on-bright);
+}
+
+.view-toggle button:last-child {
+  margin-left: -3px;
+}
+
+.pool-tags button {
+  min-height: 32px;
+  box-shadow: none;
+}
+
+/* Each sport keeps its colour on the picker; the chosen one is outlined and raised. */
+.sport-picker button {
+  color: var(--on-bright);
+}
+.sport-picker button:nth-child(1) {
+  background: var(--sport-football);
+}
+.sport-picker button:nth-child(2) {
+  background: var(--sport-soccer);
+}
+.sport-picker button:nth-child(3) {
+  background: var(--sport-basketball);
+}
+.sport-picker button:nth-child(4) {
+  background: var(--sport-hockey);
+}
+.sport-picker button:nth-child(5) {
+  background: var(--sport-baseball);
+}
+.sport-picker button[aria-checked="true"] {
+  border-color: var(--ink);
+  color: var(--on-bright);
+  transform: translate(-2px, -2px);
+  box-shadow: 5px 5px 0 var(--ink);
+  text-decoration: underline 3px;
+  text-underline-offset: 4px;
+}
+
+.sport-badge {
+  border: 2px solid var(--ink);
+  background: var(--hot);
+  color: var(--on-bright);
+  font-weight: 800;
+}
+
+.list-card,
+.pool,
+.section-strip,
+.field,
+.list-editor fieldset {
+  border: var(--line);
+  box-shadow: 6px 6px 0 var(--ink);
+}
+
+.list-card h4 a {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 1.4rem;
+  text-decoration: none;
+}
+
+.list-portraits .sprite,
+.pool-card .sprite,
+.section-tile .sprite {
+  outline: 2px solid var(--ink);
+}
+
+.slot,
+.depth-cell,
+.section-tile {
+  border-width: 2px;
+}
+
+.slot.filled {
+  border: 2px solid;
+  border-color: #111111;
+  color: #111111;
+  background: #ffffff;
+  box-shadow: 3px 3px 0 #111111;
+}
+
+.slot.filled .slot-label {
+  padding: 0 3px;
+  background: var(--highlight);
+  font-weight: 800;
+}
+
+.depth-cell.filled,
+.section-tile.filled {
+  border: 2px solid var(--ink);
+  background: var(--surface);
+}
+
+.depth-cell.starter {
+  border-color: var(--ink);
+  box-shadow: inset 0 0 0 2px var(--highlight);
+}
+
+.badge {
+  color: var(--highlight);
+  background: #111111;
+}
+
+.badge.two-way {
+  background: #111111;
+  color: #f7a8ff;
+}
+
+.badge.plays {
+  background: #111111;
+}
+
+.notice {
+  color: var(--fg);
+  font-weight: 700;
 }
