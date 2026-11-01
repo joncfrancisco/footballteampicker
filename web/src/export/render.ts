@@ -1,4 +1,5 @@
 import {
+  SPORTS,
   at,
   formationLabel,
   sportOf,
@@ -138,7 +139,7 @@ class Drawer {
       .reverse()
       .map((p) => formationLabel(p.formation))
       .join(" vs ");
-    let top = this.header(team.title, subtitle, W);
+    let top = this.header(team, subtitle, W);
     const bottom = this.footer(W, H, url);
 
     if (staff) top = this.staffStrip(team, staff, { x: PAD, y: top, w: W - 2 * PAD, h: 0 }) + 12;
@@ -212,7 +213,7 @@ class Drawer {
     const body = sections.reduce((h, s) => h + 40 + s.rows.length * ROW + 20, 0);
     const H = Math.max(1350, HEADER_H + body + FOOTER_H);
     this.begin(W, H);
-    let y = this.header(team.title, "Depth chart", W);
+    let y = this.header(team, "Depth chart", W);
     this.footer(W, H, url);
 
     const labelW = 70;
@@ -247,7 +248,10 @@ class Drawer {
 
   // ---- Pieces --------------------------------------------------------------------------
 
-  private header(title: string, subtitle: string, W: number): number {
+  /** Title, then "List · Sport · formations". The sport only shows once there's a choice. */
+  private header(team: Team, subtitle: string, W: number): number {
+    const title = team.title;
+    const sport = SPORTS.length > 1 ? `${sportOf(team).name} · ` : "";
     const ctx = this.ctx;
     ctx.textBaseline = "alphabetic";
     ctx.fillStyle = C.fg;
@@ -255,7 +259,7 @@ class Drawer {
     ctx.fillText(fit(ctx, title, W - 2 * PAD), PAD, PAD + 36);
     ctx.fillStyle = C.muted;
     ctx.font = `400 22px ${FONT}`;
-    ctx.fillText(fit(ctx, `${this.list.title} · ${subtitle}`, W - 2 * PAD), PAD, PAD + 70);
+    ctx.fillText(fit(ctx, `${this.list.title} · ${sport}${subtitle}`, W - 2 * PAD), PAD, PAD + 70);
     return HEADER_H;
   }
 

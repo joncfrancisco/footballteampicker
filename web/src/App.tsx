@@ -1,4 +1,4 @@
-import { newTeam, type Team } from "@ftp/shared";
+import { DEFAULT_SPORT, SPORTS, newTeam, sportById, type Team } from "@ftp/shared";
 import { useEffect, useState } from "react";
 import { Builder } from "./Builder";
 import { demoTeam } from "./demo";
@@ -14,6 +14,8 @@ import { About, ReportPage } from "./Policy";
 // ?fill=demo (&sections=1) is for screenshots and checks; it never touches the saved draft.
 const params = () => new URLSearchParams(window.location.search);
 const isDemo = () => params().get("fill") === "demo";
+/** ?sport= picks the builder's sport; football by default (#44). */
+const urlSport = () => sportById(params().get("sport") ?? undefined)?.id ?? DEFAULT_SPORT;
 
 export function App() {
   const path = window.location.pathname;
@@ -87,15 +89,25 @@ function TeamBuilder({
   notices?: string[];
 }) {
   const [demo] = useState(isDemo);
-  const [team, setTeam] = useState<Team>(() =>
+  const start = (sport: string): Team =>
     demo
-      ? demoTeam(list, { sections: params().get("sections") === "1" })
-      : (initial ?? loadDraft(list) ?? newTeam(list)),
-  );
+      ? demoTeam(list, { sections: params().get("sections") === "1", sport })
+      : (loadDraft(list, sport) ?? newTeam(list, sport));
+  const [team, setTeam] = useState<Team>(() => initial ?? start(urlSport()));
 
   useEffect(() => {
     if (!demo) saveDraft(team);
   }, [demo, team]);
+
+  /** Each sport keeps its own draft; the URL says which one is open (/build/<list>?sport=). */
+  const pickSport = (sport: string) => {
+    const url = new URL(location.href);
+    if (sport === DEFAULT_SPORT) url.searchParams.delete("sport");
+    else url.searchParams.set("sport", sport);
+    url.searchParams.delete("remix");
+    history.replaceState(null, "", url);
+    setTeam(start(sport));
+  };
 
   return (
     <>
@@ -109,6 +121,7 @@ function TeamBuilder({
           ))}
         </div>
       )}
+      {SPORTS.length > 1 && <SportPicker value={team.sport} onChange={pickSport} />}
       <Builder list={list} team={team} onChange={setTeam}>
         <ShareMenu list={list} team={team} />
       </Builder>
@@ -116,5 +129,24 @@ function TeamBuilder({
         <p className="disclaimer">{list.disclaimer}</p>
       )}
     </>
+  );
+}
+
+/** Pick the sport first: the team, field, rules and formations all follow it. */
+function SportPicker({ value, onChange }: { value: string; onChange: (sport: string) => void }) {
+  return (
+    <div className="sport-picker" role="radiogroup" aria-label="Sport">
+      {SPORTS.map((s) => (
+        <button
+          key={s.id}
+          type="button"
+          role="radio"
+          aria-checked={s.id === value}
+          onClick={() => s.id !== value && onChange(s.id)}
+        >
+          {s.name}
+        </button>
+      ))}
+    </div>
   );
 }

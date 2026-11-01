@@ -8,6 +8,7 @@ import {
   movedNotice,
   randomize,
   setSection,
+  SPORTS,
   sportOf,
   switchVariant,
   unitFormations,
@@ -109,6 +110,11 @@ function BuilderBody(props: Props & { notice: string; setNotice: (s: string) => 
   return (
     <section className="builder">
       <div className="team-meta">
+        {SPORTS.length > 1 && (
+          <span className="sport-badge" data-testid="sport-badge">
+            {sport.name}
+          </span>
+        )}
         {readOnly ? (
           <h2 className="team-title">{team.title}</h2>
         ) : (
