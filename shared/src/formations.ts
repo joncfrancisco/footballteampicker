@@ -1,4 +1,4 @@
-import type { Front, PositionId, Side } from "./positions";
+import type { Front, PositionId } from "./positions";
 
 /**
  * Field coordinates are 0–100 on both axes: x across the field (0 = left sideline as the
@@ -7,8 +7,11 @@ import type { Front, PositionId, Side } from "./positions";
  */
 export const LOS_Y = 50;
 
-/** A depth spot: `depth` is 1-based, so WR3 is { pos: "WR", depth: 3 }. */
-export type DepthRef = { pos: PositionId; depth: number };
+/**
+ * A depth spot: `depth` is 1-based, so WR3 is { pos: "WR", depth: 3 }. `unit` is only set
+ * when a slot fills from another unit than its formation's (baseball's pitcher).
+ */
+export type DepthRef = { pos: string; depth: number; unit?: string };
 
 export type Slot = {
   /** Unique within the formation. */
@@ -26,12 +29,16 @@ export type QbAlignment = "under" | "gun";
 
 export type Formation = {
   id: string;
-  side: Side;
+  /** The unit whose depth chart this formation views. */
+  unit: string;
   name: string;
+  /** Picker group ("11 personnel", "Base"). */
+  group?: string;
   personnel?: Personnel;
-  front?: Front;
+  /** Only valid for this row variant of its unit (football's front). */
+  variant?: string;
   package?: Package;
-  /** Exactly 11. */
+  /** One per player on the surface: 11 in football. */
   slots: Slot[];
   /** Offense: where the QB lines up by default, and moves for the other alignment if offered. */
   qb?: QbAlignment;
@@ -71,7 +78,7 @@ const TO_UNDER = { qb: { x: UNDER.qb.x, y: UNDER.qb.y }, rb: { x: UNDER.rb.x, y:
 const OFFENSE: Formation[] = [
   {
     id: "11-singleback",
-    side: "offense",
+    unit: "offense",
     name: "Singleback",
     personnel: "11",
     qb: "under",
@@ -88,7 +95,7 @@ const OFFENSE: Formation[] = [
   },
   {
     id: "11-shotgun-trips",
-    side: "offense",
+    unit: "offense",
     name: "Shotgun Trips",
     personnel: "11",
     qb: "gun",
@@ -105,7 +112,7 @@ const OFFENSE: Formation[] = [
   },
   {
     id: "12-ace",
-    side: "offense",
+    unit: "offense",
     name: "Singleback Ace",
     personnel: "12",
     qb: "under",
@@ -122,7 +129,7 @@ const OFFENSE: Formation[] = [
   },
   {
     id: "21-i-pro",
-    side: "offense",
+    unit: "offense",
     name: "I-Formation Pro",
     personnel: "21",
     qb: "under",
@@ -138,7 +145,7 @@ const OFFENSE: Formation[] = [
   },
   {
     id: "22-i-tight",
-    side: "offense",
+    unit: "offense",
     name: "I-Formation Tight",
     personnel: "22",
     qb: "under",
@@ -154,7 +161,7 @@ const OFFENSE: Formation[] = [
   },
   {
     id: "13-jumbo",
-    side: "offense",
+    unit: "offense",
     name: "Jumbo",
     personnel: "13",
     qb: "under",
@@ -170,7 +177,7 @@ const OFFENSE: Formation[] = [
   },
   {
     id: "10-spread",
-    side: "offense",
+    unit: "offense",
     name: "Shotgun Spread",
     personnel: "10",
     qb: "gun",
@@ -187,7 +194,7 @@ const OFFENSE: Formation[] = [
   },
   {
     id: "00-empty",
-    side: "offense",
+    unit: "offense",
     name: "Empty",
     personnel: "00",
     qb: "gun",
@@ -222,9 +229,9 @@ const FOUR_THREE_DL = [
 const DEFENSE: Formation[] = [
   {
     id: "43-over",
-    side: "defense",
+    unit: "defense",
     name: "4-3 Over",
-    front: "4-3",
+    variant: "4-3",
     package: "base",
     slots: [
       ...FOUR_THREE_DL,
@@ -237,9 +244,9 @@ const DEFENSE: Formation[] = [
   },
   {
     id: "43-bear",
-    side: "defense",
+    unit: "defense",
     name: "46 Bear",
-    front: "4-3",
+    variant: "4-3",
     package: "base",
     slots: [
       s("lde", "LDE", "LDE", 1, 31, DL_Y),
@@ -256,9 +263,9 @@ const DEFENSE: Formation[] = [
   },
   {
     id: "43-nickel",
-    side: "defense",
+    unit: "defense",
     name: "4-2-5 Nickel",
-    front: "4-3",
+    variant: "4-3",
     package: "nickel",
     slots: [
       ...FOUR_THREE_DL,
@@ -271,9 +278,9 @@ const DEFENSE: Formation[] = [
   },
   {
     id: "43-dime",
-    side: "defense",
+    unit: "defense",
     name: "4-1-6 Dime",
-    front: "4-3",
+    variant: "4-3",
     package: "dime",
     slots: [
       ...FOUR_THREE_DL,
@@ -286,9 +293,9 @@ const DEFENSE: Formation[] = [
   },
   {
     id: "34-okie",
-    side: "defense",
+    unit: "defense",
     name: "3-4 Okie",
-    front: "3-4",
+    variant: "3-4",
     package: "base",
     slots: [
       s("lde", "LDE", "LDE", 1, 40, DL_Y),
@@ -304,9 +311,9 @@ const DEFENSE: Formation[] = [
   },
   {
     id: "34-nickel",
-    side: "defense",
+    unit: "defense",
     name: "2-4-5 Nickel",
-    front: "3-4",
+    variant: "3-4",
     package: "nickel",
     slots: [
       s("lde", "LDE", "LDE", 1, 44, DL_Y),
@@ -322,9 +329,9 @@ const DEFENSE: Formation[] = [
   },
   {
     id: "34-dime",
-    side: "defense",
+    unit: "defense",
     name: "2-3-6 Dime",
-    front: "3-4",
+    variant: "3-4",
     package: "dime",
     slots: [
       s("lde", "LDE", "LDE", 1, 44, DL_Y),
@@ -340,22 +347,15 @@ const DEFENSE: Formation[] = [
   },
 ];
 
-export const FORMATIONS: readonly Formation[] = [...OFFENSE, ...DEFENSE];
+const PACKAGES: Record<Package, string> = { base: "Base", nickel: "Nickel", dime: "Dime" };
+
+export const FORMATIONS: readonly Formation[] = [...OFFENSE, ...DEFENSE].map((f) => ({
+  ...f,
+  group: f.personnel ? `${f.personnel} personnel` : PACKAGES[f.package!],
+}));
 
 export const DEFAULT_OFFENSE = "11-singleback";
 export const DEFAULT_DEFENSE: Record<Front, string> = { "4-3": "43-over", "3-4": "34-okie" };
-
-export function formationById(id: string): Formation | undefined {
-  return FORMATIONS.find((f) => f.id === id);
-}
-
-export function offenseFormations(): Formation[] {
-  return FORMATIONS.filter((f) => f.side === "offense");
-}
-
-export function defenseFormations(front: Front): Formation[] {
-  return FORMATIONS.filter((f) => f.side === "defense" && f.front === front);
-}
 
 /** Picker label, e.g. "11 · Shotgun Trips". */
 export function formationLabel(f: Formation): string {
@@ -363,7 +363,7 @@ export function formationLabel(f: Formation): string {
 }
 
 /** Slots with the QB toggle applied. */
-export function slotsFor(f: Formation, qb: QbAlignment | undefined): Slot[] {
+export function slotsFor(f: Formation, qb: string | undefined): Slot[] {
   if (!f.altQb || !qb || qb === f.qb) return f.slots;
   return f.slots.map((slot) => ({ ...slot, ...f.altQb!.moves[slot.id] }));
 }

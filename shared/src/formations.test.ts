@@ -4,14 +4,17 @@ import {
   DEFAULT_OFFENSE,
   FORMATIONS,
   LOS_Y,
-  defenseFormations,
-  formationById,
   formationLabel,
-  offenseFormations,
   refLabel,
   slotsFor,
 } from "./formations";
 import { FRONTS, rowsFor } from "./positions";
+import { findFormation, unitFormations } from "./sport";
+import { FOOTBALL } from "./sports";
+
+const formationById = (id: string) => findFormation(FOOTBALL, id);
+const offenseFormations = () => unitFormations(FOOTBALL, "offense");
+const defenseFormations = (front: string) => unitFormations(FOOTBALL, "defense", front);
 
 const count = (f: (typeof FORMATIONS)[number], ...pos: string[]) =>
   f.slots.filter((s) => pos.includes(s.ref.pos)).length;
@@ -24,7 +27,7 @@ describe.each(FORMATIONS.map((f) => [f.id, f] as const))("%s", (_id, f) => {
   });
 
   it("only uses depth spots that exist for its side and front", () => {
-    const rows = f.side === "offense" ? rowsFor("offense") : rowsFor("defense", f.front!);
+    const rows = f.unit === "offense" ? rowsFor("offense") : rowsFor("defense", f.variant as "4-3");
     for (const { ref } of f.slots) {
       expect(rows, refLabel(ref)).toHaveProperty(ref.pos);
       expect(ref.depth).toBeGreaterThanOrEqual(1);
@@ -36,12 +39,12 @@ describe.each(FORMATIONS.map((f) => [f.id, f] as const))("%s", (_id, f) => {
     for (const slot of slotsFor(f, f.qb === "gun" ? "under" : "gun")) {
       expect(slot.x).toBeGreaterThanOrEqual(0);
       expect(slot.x).toBeLessThanOrEqual(100);
-      if (f.side === "offense") expect(slot.y).toBeGreaterThan(LOS_Y);
+      if (f.unit === "offense") expect(slot.y).toBeGreaterThan(LOS_Y);
       else expect(slot.y).toBeLessThan(LOS_Y);
     }
   });
 
-  if (f.side === "offense") {
+  if (f.unit === "offense") {
     it("matches its personnel label and uses the whole line", () => {
       const [backs, tes] = f.personnel!.split("").map(Number);
       expect(count(f, "RB", "FB")).toBe(backs);
@@ -66,8 +69,8 @@ describe("catalog", () => {
   });
 
   it("has a default for offense and each front", () => {
-    expect(formationById(DEFAULT_OFFENSE)?.side).toBe("offense");
-    for (const front of FRONTS) expect(formationById(DEFAULT_DEFENSE[front])?.front).toBe(front);
+    expect(formationById(DEFAULT_OFFENSE)?.unit).toBe("offense");
+    for (const front of FRONTS) expect(formationById(DEFAULT_DEFENSE[front])?.variant).toBe(front);
   });
 
   it("labels offense by personnel", () => {

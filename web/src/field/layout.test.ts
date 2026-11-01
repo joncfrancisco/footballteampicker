@@ -29,12 +29,12 @@ describe.each(
     ]),
   ) as [string, (typeof FORMATIONS)[number], "gun" | "under" | undefined][],
 )("%s", (_name, f, qb) => {
-  const away = f.side === "offense" ? 1 : -1;
+  const away = f.unit === "offense" ? 1 : -1;
   const slots = slotsFor(f, qb);
 
   it.each([
-    ["phone", PHONE, f.side === "offense" ? VIEW.offense : VIEW.defense],
-    ["desktop", DESKTOP, f.side === "offense" ? VIEW.faceOffense : VIEW.faceDefense],
+    ["phone", PHONE, f.unit === "offense" ? VIEW.offense : VIEW.defense],
+    ["desktop", DESKTOP, f.unit === "offense" ? VIEW.faceOffense : VIEW.faceDefense],
   ] as const)("has no overlapping tiles on %s", (_size, size, view) => {
     const height = (view.yMax - view.yMin) * size.scale;
     const placed = layoutSlots({

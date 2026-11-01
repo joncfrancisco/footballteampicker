@@ -1,20 +1,18 @@
 import {
-  FRONTS,
   at,
   autoFill,
   clearSide,
-  defenseFormations,
   filledCount,
-  formationById,
+  findFormation,
   formationLabel,
   movedNotice,
-  offenseFormations,
   randomize,
   setSection,
   slotsFor,
-  switchFront,
+  sportOf,
+  switchVariant,
+  unitFormations,
   type Formation,
-  type Front,
   type Team,
 } from "@ftp/shared";
 import { useEffect, useState } from "react";
@@ -26,10 +24,8 @@ import { Field } from "./field/Field";
 import { VIEW } from "./field/views";
 import type { LoadedList } from "./lists";
 import { Pool } from "./pool/Pool";
-import { SpecialTeamsPanel, StaffStrip } from "./sections/Sections";
+import { SectionPanel, StaffStrip } from "./sections/Sections";
 import { useMedia } from "./useSize";
-
-const PACKAGES = { base: "Base", nickel: "Nickel", dime: "Dime" } as const;
 
 type Props = {
   list: LoadedList;
@@ -73,15 +69,18 @@ function BuilderBody(props: Props & { notice: string; setNotice: (s: string) => 
   const bothPickers = facing || view === "depth";
   const order = list.characters.map((c) => c.id);
 
-  const offense = formationById(team.offense.formation)!;
-  const defense = formationById(team.defense.formation)!;
-  const offenseSlots = slotsFor(offense, team.offense.qb);
-  const qb = team.offense.qb ?? offense.qb;
+  const sport = sportOf(team);
+  const formationOf = (unit: string) => findFormation(sport, team.units[unit]?.formation);
+  const offense = formationOf("offense")!;
+  const defense = formationOf("defense")!;
+  const offenseSlots = slotsFor(offense, team.units.offense!.align);
+  // Pickers follow the surface: on the gridiron the defense is drawn above the offense.
+  const pickerUnits = sport.surface === "gridiron" ? [...sport.units].reverse() : sport.units;
 
-  const toggleSection = (section: "specialTeams" | "staff") => {
-    const on = team[section] !== undefined;
+  const toggleSection = (section: string) => {
+    const on = team.sections?.[section] !== undefined;
     const filled = filledCount(team, section);
-    const name = section === "staff" ? "staff" : "special teams";
+    const name = sport.sections.find((s) => s.id === section)!.name.toLowerCase();
     if (
       on &&
       filled > 0 &&
@@ -93,11 +92,19 @@ function BuilderBody(props: Props & { notice: string; setNotice: (s: string) => 
     onChange(setSection(team, section, !on));
   };
 
-  const setFront = (front: Front) => {
-    const { team: next, moved } = switchFront(team, front);
+  const staff = sport.sections.find((s) => s.kind === "staff" && team.sections?.[s.id]);
+  const situational = sport.sections.filter(
+    (s) => s.kind === "situational" && team.sections?.[s.id],
+  );
+
+  const setVariant = (unit: string, variant: string) => {
+    const { team: next, moved } = switchVariant(team, unit, variant);
     onChange(next);
     setNotice(movedNotice(moved) ?? "");
   };
+
+  const setUnit = (unit: string, patch: Partial<Team["units"][string]>) =>
+    onChange({ ...team, units: { ...team.units, [unit]: { ...team.units[unit]!, ...patch } } });
 
   return (
     <section className="builder">
@@ -124,29 +131,38 @@ function BuilderBody(props: Props & { notice: string; setNotice: (s: string) => 
         {!readOnly && (
           <>
             <div className="section-toggles" role="group" aria-label="Optional sections">
-              {(["specialTeams", "staff"] as const).map((section) => (
-                <button
-                  key={section}
-                  type="button"
-                  aria-pressed={team[section] !== undefined}
-                  onClick={() => toggleSection(section)}
-                >
-                  {team[section] !== undefined ? "✓ " : "+ "}
-                  {section === "staff" ? "Staff" : "Special teams"}
-                </button>
-              ))}
+              {sport.sections.map((section) => {
+                const on = team.sections?.[section.id] !== undefined;
+                return (
+                  <button
+                    key={section.id}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => toggleSection(section.id)}
+                  >
+                    {on ? "✓ " : "+ "}
+                    {section.name}
+                  </button>
+                );
+              })}
             </div>
-            <label>
-              Front{" "}
-              <select
-                value={team.defense.front}
-                onChange={(e) => setFront(e.target.value as Front)}
-              >
-                {FRONTS.map((f) => (
-                  <option key={f}>{f}</option>
-                ))}
-              </select>
-            </label>
+            {sport.units
+              .filter((u) => u.variants.length > 1)
+              .map((unit) => (
+                <label key={unit.id}>
+                  {unit.variantLabel ?? unit.name}{" "}
+                  <select
+                    value={team.units[unit.id]!.variant}
+                    onChange={(e) => setVariant(unit.id, e.target.value)}
+                  >
+                    {unit.variants.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ))}
           </>
         )}
       </div>
@@ -154,43 +170,36 @@ function BuilderBody(props: Props & { notice: string; setNotice: (s: string) => 
       <div className="builder-layout">
         <div className="builder-main">
           <div className="pickers">
-            {(bothPickers || tab === "defense") && (
-              <FormationPicker
-                label="Defense"
-                value={defense.id}
-                groups={groupBy(defenseFormations(team.defense.front), (f) => PACKAGES[f.package!])}
-                onChange={(formation) =>
-                  onChange({ ...team, defense: { ...team.defense, formation } })
-                }
-              />
-            )}
-            {(bothPickers || tab === "offense") && (
-              <FormationPicker
-                label="Offense"
-                value={offense.id}
-                groups={groupBy(offenseFormations(), (f) => `${f.personnel} personnel`)}
-                onChange={(formation) =>
-                  onChange({ ...team, offense: { ...team.offense, formation, qb: undefined } })
-                }
-                extra={
-                  offense.altQb && (
-                    <button
-                      type="button"
-                      className="qb-toggle"
-                      aria-pressed={qb === "gun"}
-                      onClick={() =>
-                        onChange({
-                          ...team,
-                          offense: { ...team.offense, qb: qb === "gun" ? "under" : "gun" },
-                        })
-                      }
-                    >
-                      {qb === "gun" ? "Shotgun" : "Under center"}
-                    </button>
-                  )
-                }
-              />
-            )}
+            {pickerUnits.map((unit) => {
+              const state = team.units[unit.id]!;
+              const f = formationOf(unit.id);
+              const options = unitFormations(sport, unit.id, state.variant);
+              if (!f || !options.length || !(bothPickers || tab === unit.id)) return null;
+              const align = state.align ?? f.qb;
+              return (
+                <FormationPicker
+                  key={unit.id}
+                  label={unit.name}
+                  value={f.id}
+                  groups={groupBy(options, (o) => o.group ?? "")}
+                  onChange={(formation) => setUnit(unit.id, { formation, align: undefined })}
+                  extra={
+                    f.altQb && (
+                      <button
+                        type="button"
+                        className="qb-toggle"
+                        aria-pressed={align === "gun"}
+                        onClick={() =>
+                          setUnit(unit.id, { align: align === "gun" ? "under" : "gun" })
+                        }
+                      >
+                        {align === "gun" ? "Shotgun" : "Under center"}
+                      </button>
+                    )
+                  }
+                />
+              );
+            })}
           </div>
 
           {!readOnly && (
@@ -201,12 +210,15 @@ function BuilderBody(props: Props & { notice: string; setNotice: (s: string) => 
               <button type="button" onClick={() => onChange(randomize(team, order))}>
                 Randomize
               </button>
-              <button type="button" onClick={() => onChange(clearSide(team, "offense"))}>
-                Clear offense
-              </button>
-              <button type="button" onClick={() => onChange(clearSide(team, "defense"))}>
-                Clear defense
-              </button>
+              {sport.units.map((unit) => (
+                <button
+                  key={unit.id}
+                  type="button"
+                  onClick={() => onChange(clearSide(team, unit.id))}
+                >
+                  Clear {unit.name.toLowerCase()}
+                </button>
+              ))}
             </div>
           )}
 
@@ -215,10 +227,10 @@ function BuilderBody(props: Props & { notice: string; setNotice: (s: string) => 
 
           <StatusBar notice={notice} />
 
-          {view === "field" && team.staff && <StaffStrip />}
+          {view === "field" && staff && <StaffStrip section={staff} />}
 
           {view === "depth" ? (
-            <DepthChart list={list} team={team} offense={offense} defense={defense} />
+            <DepthChart list={list} team={team} sport={sport} />
           ) : facing ? (
             <div className="facing">
               <Field side="defense" slots={defense.slots} {...VIEW.faceDefense} />
@@ -246,7 +258,8 @@ function BuilderBody(props: Props & { notice: string; setNotice: (s: string) => 
             </>
           )}
 
-          {view === "field" && team.specialTeams && <SpecialTeamsPanel />}
+          {view === "field" &&
+            situational.map((section) => <SectionPanel key={section.id} section={section} />)}
         </div>
         {!readOnly && <Pool />}
       </div>

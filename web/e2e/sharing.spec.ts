@@ -111,11 +111,11 @@ test("saved snapshots survive list edits; remix handles removed and former two-w
   );
   const first = characters[0]!;
   const removed = characters[1]!;
-  team.offense.depth.QB![0] = first.id;
-  team.offense.depth.RB![1] = removed.id;
-  team.defense.depth.FS![0] = first.id;
-  team.specialTeams!.KR![0] = first.id;
-  team.staff!.HC = characters[2]!.id;
+  team.units.offense!.depth.QB![0] = first.id;
+  team.units.offense!.depth.RB![1] = removed.id;
+  team.units.defense!.depth.FS![0] = first.id;
+  team.sections!.specialTeams!.KR![0] = first.id;
+  team.sections!.staff!.HC = [characters[2]!.id];
   const saved = await request.post("/api/teams", {
     headers: HUMAN,
     data: { ...team, listVersion: 1 },

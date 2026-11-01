@@ -1,19 +1,19 @@
-import { SPECIAL_TEAMS_ROWS, STAFF_ROLES, STAFF_TITLES, type Spot } from "@ftp/shared";
+import type { SectionDef, Spot } from "@ftp/shared";
 import { useLineup } from "../dnd/Lineup";
 import { useSpot } from "../dnd/useSpot";
 import { Sprite } from "../Sprite";
 
 /** Front office: one tile per staff role, above the field. */
-export function StaffStrip() {
+export function StaffStrip({ section }: { section: SectionDef }) {
   return (
     <section className="section-strip staff-strip" aria-label="Staff" data-testid="staff">
       <h2>Front office</h2>
       <div className="section-tiles">
-        {STAFF_ROLES.map((role) => (
+        {Object.keys(section.rows).map((role) => (
           <SectionTile
             key={role}
-            spot={{ side: "staff", pos: role, index: 0 }}
-            title={STAFF_TITLES[role]}
+            spot={{ side: section.id, pos: role, index: 0 }}
+            title={section.titles?.[role]}
           />
         ))}
       </div>
@@ -21,15 +21,23 @@ export function StaffStrip() {
   );
 }
 
-/** Special teams: K, P, LS, H, KR ×2, PR ×2. No kickoff/punt formations in v1. */
-export function SpecialTeamsPanel() {
+/** A situational section (special teams...): one tile per spot. No formations for these. */
+export function SectionPanel({ section }: { section: SectionDef }) {
   return (
-    <section className="section-strip" aria-label="Special teams" data-testid="special-teams">
-      <h2>Special teams</h2>
+    <section
+      className="section-strip"
+      aria-label={section.name}
+      data-testid={section.id.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}
+    >
+      <h2>{section.name}</h2>
       <div className="section-tiles">
-        {Object.entries(SPECIAL_TEAMS_ROWS).flatMap(([pos, n]) =>
+        {Object.entries(section.rows).flatMap(([pos, n]) =>
           Array.from({ length: n }, (_, index) => (
-            <SectionTile key={`${pos}${index}`} spot={{ side: "specialTeams", pos, index }} />
+            <SectionTile
+              key={`${pos}${index}`}
+              spot={{ side: section.id, pos, index }}
+              title={section.titles?.[pos]}
+            />
           )),
         )}
       </div>

@@ -207,7 +207,7 @@ export function createApi(deps: Deps) {
   async function createTeam(event: Event) {
     await requireHuman(event);
     await enforceRate(event, "teams");
-    const input = parse(TeamInput, event) as TeamInput & Team;
+    const input = parse(TeamInput, event) as Team & { listVersion?: number };
     const list = await listFor(input.listId);
     if (input.listVersion !== undefined && input.listVersion !== list.version)
       throw new HttpError(409, { error: "list_changed", version: list.version });
@@ -225,7 +225,7 @@ export function createApi(deps: Deps) {
     const { listVersion: _v, ...team } = input;
     const stored: StoredTeam = {
       ...team,
-      schema: 1,
+      schema: 2,
       id,
       listVersion: list.version,
       listTitle: list.title,
@@ -444,9 +444,10 @@ export function clientIp(event: Event): string {
 function usedIds(team: Team): Set<string> {
   const ids = new Set<string>();
   const add = (row: (string | null)[]) => row.forEach((id) => id && ids.add(id));
-  Object.values(team.offense.depth).forEach(add);
-  Object.values(team.defense.depth).forEach(add);
-  Object.values(team.specialTeams ?? {}).forEach(add);
-  add(Object.values(team.staff ?? {}));
+  for (const depth of [
+    ...Object.values(team.units).map((u) => u.depth),
+    ...Object.values(team.sections ?? {}),
+  ])
+    Object.values(depth).forEach(add);
   return ids;
 }

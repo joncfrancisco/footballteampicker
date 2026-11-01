@@ -10,6 +10,49 @@ const roster = new Map([
 
 const parsed = (t: unknown) => TeamInput.parse(t) as Team;
 
+/** A football team as every client sent it before #44. */
+const V1 = {
+  title: "Old",
+  listId: "demo-lol",
+  offense: {
+    depth: newTeam({ id: "demo-lol", ip: "X" }).units.offense!.depth,
+    formation: "10-spread",
+    qb: "under",
+  },
+  defense: {
+    front: "3-4",
+    depth: newTeam({ id: "demo-lol", ip: "X" }, "football", { defense: "3-4" }).units.defense!
+      .depth,
+    formation: "34-dime",
+  },
+  specialTeams: {
+    K: ["ahri"],
+    P: [null],
+    LS: [null],
+    H: [null],
+    KR: [null, null],
+    PR: [null, null],
+  },
+  staff: { HC: "braum", OC: null, DC: null, STC: null, GM: null },
+};
+
+describe("v1 team bodies (#44)", () => {
+  it("are still accepted, upgraded to football v2", () => {
+    const t = parsed(V1);
+    expect(t).toMatchObject({
+      schemaVersion: 2,
+      sport: "football",
+      units: {
+        offense: { formation: "10-spread", align: "under" },
+        defense: { formation: "34-dime", variant: "3-4" },
+      },
+      sections: { specialTeams: { K: ["ahri"] }, staff: { HC: ["braum"] } },
+    });
+    expect(t).not.toHaveProperty("offense");
+    expect(teamErrors(t, roster)).toEqual([]);
+  });
+});
+
 describe("TeamInput + teamErrors", () => {
   it("accepts a builder team, sections and all", () => {
     let t = setSection(
@@ -30,31 +73,50 @@ describe("TeamInput + teamErrors", () => {
     expect(TeamInput.safeParse({ ...t, title: "\u0001" }).success).toBe(false);
   });
 
-  it("rejects unknown keys in staff and bad ids", () => {
+  it("rejects unknown keys and bad ids", () => {
     const t = newTeam({ id: "demo-lol", ip: "X" });
+    expect(TeamInput.safeParse({ ...t, offense: t.units.offense }).success).toBe(false);
     expect(
       TeamInput.safeParse({
-        ...t,
+        ...V1,
         staff: { HC: null, OC: null, DC: null, STC: null, GM: null, XX: null },
       }).success,
     ).toBe(false);
+    expect(teamErrors({ ...t, sections: { staff: { XX: [null] } } }, roster)).toContain(
+      "staff has no XX row",
+    );
     expect(TeamInput.safeParse({ ...t, listId: "../etc" }).success).toBe(false);
   });
 
   it("runs the builder's rules: formations, front, shapes, lineup", () => {
     const t = newTeam({ id: "demo-lol", ip: "X" });
-    expect(teamErrors({ ...t, defense: { ...t.defense, formation: "34-okie" } }, roster)).toContain(
-      '"34-okie" isn\'t a 4-3 formation',
-    );
-    expect(teamErrors({ ...t, offense: { ...t.offense, formation: "nope" } }, roster)).toContain(
-      'Unknown offensive formation "nope"',
-    );
     expect(
-      teamErrors({ ...t, offense: { ...t.offense, formation: "21-i-pro", qb: "gun" } }, roster),
+      teamErrors(
+        { ...t, units: { ...t.units, defense: { ...t.units.defense!, formation: "34-okie" } } },
+        roster,
+      ),
+    ).toContain('"34-okie" isn\'t a 4-3 formation');
+    expect(
+      teamErrors(
+        { ...t, units: { ...t.units, offense: { ...t.units.offense!, formation: "nope" } } },
+        roster,
+      ),
+    ).toContain('Unknown offense formation "nope"');
+    expect(
+      teamErrors(
+        {
+          ...t,
+          units: {
+            ...t.units,
+            offense: { ...t.units.offense!, formation: "21-i-pro", align: "gun" },
+          },
+        },
+        roster,
+      ),
     ).toContain("I-Formation Pro has no gun option");
     const twice = structuredClone(t);
-    twice.offense.depth.QB![0] = "ahri";
-    twice.defense.depth.MLB![0] = "ahri";
+    twice.units.offense!.depth.QB![0] = "ahri";
+    twice.units.defense!.depth.MLB![0] = "ahri";
     expect(teamErrors(twice, roster)).toEqual(["Ahri isn't a two-way player"]);
   });
 });

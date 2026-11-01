@@ -26,7 +26,11 @@ const roster = new Map(seed.characters.map((c) => [c.id, c]));
 function fullTeam(front: Front): Team {
   const order = seed.characters.map((c) => c.id);
   let team = autoFill(
-    setSection(setSection(newTeam(seed, front), "specialTeams", true), "staff", true),
+    setSection(
+      setSection(newTeam(seed, "football", { defense: front }), "specialTeams", true),
+      "staff",
+      true,
+    ),
     order,
   );
   const fill = (side: "specialTeams" | "staff", pos: string, index: number, id: string) => {
@@ -35,11 +39,13 @@ function fullTeam(front: Front): Team {
     team = r.team;
   };
   // Special teams reuse starters (allowed on top of a regular spot); staff are bench names.
-  const starters = Object.values(team.offense.depth).map((row) => row[0]!);
+  const starters = Object.values(team.units.offense!.depth).map((row) => row[0]!);
   let s = 0;
   for (const [pos, n] of Object.entries(SPECIAL_TEAMS_ROWS))
     for (let i = 0; i < n; i++) fill("specialTeams", pos, i, starters[s++ % starters.length]!);
-  const playing = new Set(Object.values({ ...team.offense.depth, ...team.defense.depth }).flat());
+  const playing = new Set(
+    Object.values({ ...team.units.offense!.depth, ...team.units.defense!.depth }).flat(),
+  );
   const coaches = order.filter((id) => !playing.has(id));
   STAFF_ROLES.forEach((role, i) => fill("staff", role, 0, coaches[i]!));
   return { ...team, title: `Load test ${front}` };
@@ -55,9 +61,9 @@ it("load-test teams are full and valid against the shared rules", () => {
     );
   for (const team of built.teams) {
     expect(teamErrors(team, roster)).toEqual([]);
-    expect(Object.values(team.offense.depth).flat()).not.toContain(null);
-    expect(Object.values(team.defense.depth).flat()).not.toContain(null);
-    expect(Object.values(team.staff!)).not.toContain(null);
+    expect(Object.values(team.units.offense!.depth).flat()).not.toContain(null);
+    expect(Object.values(team.units.defense!.depth).flat()).not.toContain(null);
+    expect(Object.values(team.sections!.staff!).flat()).not.toContain(null);
   }
   expect(committed).toEqual(JSON.parse(JSON.stringify(built)));
 });

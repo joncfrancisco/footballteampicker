@@ -26,16 +26,16 @@ for (const size of SIZES) {
     for (const f of FORMATIONS) {
       test(`${f.id} fits, every slot tappable`, async ({ page }, info) => {
         await page.goto("/?fill=demo");
-        if (f.side === "defense" && f.front === "3-4") {
+        if (f.unit === "defense" && f.variant === "3-4") {
           await page.getByRole("combobox", { name: "Front" }).selectOption("3-4");
         }
-        const tab = page.getByRole("tab", { name: f.side === "offense" ? "Offense" : "Defense" });
+        const tab = page.getByRole("tab", { name: f.unit === "offense" ? "Offense" : "Defense" });
         if (await tab.isVisible()) await tab.click();
         await page
-          .getByRole("combobox", { name: f.side === "offense" ? "Offense" : "Defense" })
+          .getByRole("combobox", { name: f.unit === "offense" ? "Offense" : "Defense" })
           .selectOption(f.id);
 
-        const boxes = await slotBoxes(page, f.side);
+        const boxes = await slotBoxes(page, f.unit);
         for (const b of boxes) {
           expect(b.width, b.ref).toBeGreaterThanOrEqual(44);
           expect(b.height, b.ref).toBeGreaterThanOrEqual(44);

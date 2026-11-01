@@ -1,10 +1,10 @@
-import { formationById, type Team, type PublishedTeam } from "@ftp/shared";
+import { findFormation, sportOf, type Team, type PublishedTeam } from "@ftp/shared";
 import { useCallback, useState } from "react";
 import { Builder } from "./Builder";
 import { NotFound } from "./Catalog";
 import { loadList, type LoadedList } from "./lists";
 import { ShareLink } from "./ShareMenu";
-import { loadTeam, remixTeam, snapshotList } from "./sharing";
+import { loadTeam, remixTeam, snapshotList, teamOf } from "./sharing";
 import { useResource } from "./useResource";
 
 export function TeamPage({ id }: { id: string }) {
@@ -24,13 +24,19 @@ export function TeamPage({ id }: { id: string }) {
 function TeamViewer({ saved }: { saved: PublishedTeam }) {
   const [list] = useState(() => snapshotList(saved));
   const [team, setTeam] = useState<Team>(() => {
-    const t = structuredClone(saved) as Team;
+    const t = teamOf(saved);
+    const sport = sportOf(t);
     const params = new URLSearchParams(location.search);
-    const o = formationById(params.get("o") ?? "");
-    const d = formationById(params.get("d") ?? "");
-    if (o?.side === "offense") t.offense = { ...t.offense, formation: o.id, qb: undefined };
-    if (d?.side === "defense" && d.front === t.defense.front)
-      t.defense = { ...t.defense, formation: d.id };
+    // ?o= / ?d= show another football formation; other sports use ?f.<unit>=.
+    const asked = (unit: string) =>
+      params.get(`f.${unit}`) ??
+      (unit === "offense" ? params.get("o") : unit === "defense" ? params.get("d") : null);
+    for (const unit of sport.units) {
+      const f = findFormation(sport, asked(unit.id) ?? undefined);
+      const state = t.units[unit.id]!;
+      if (f?.unit === unit.id && (f.variant === undefined || f.variant === state.variant))
+        t.units[unit.id] = { ...state, formation: f.id, align: undefined };
+    }
     return t;
   });
   return (

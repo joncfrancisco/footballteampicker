@@ -1,12 +1,12 @@
 import {
-  SPECIAL_TEAMS_ROWS,
-  STAFF_ROLES,
+  findFormation,
   formationLabel,
   refLabel,
-  rowsFor,
   slotsFor,
-  type Formation,
+  unitRows,
+  type Rows,
   type Spot,
+  type SportDef,
   type Team,
 } from "@ftp/shared";
 import { spotLabel } from "../dnd/ids";
@@ -14,57 +14,77 @@ import { useSpot } from "../dnd/useSpot";
 import type { LoadedList } from "../lists";
 import { Sprite } from "../Sprite";
 
-const ORDINALS = ["1st", "2nd", "3rd", "4th", "5th", "6th"];
-const COLUMNS = 6; // WR1–WR6 is the deepest row
+const ORDINALS = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th"];
 
-type Props = { list: LoadedList; team: Team; offense: Formation; defense: Formation };
+type Props = { list: LoadedList; team: Team; sport: SportDef };
+
+/** How deep the deepest row of the sport goes (WR1–WR6 in football). */
+export function depthColumns(sport: SportDef): number {
+  const rows = [
+    ...sport.units.flatMap((u) => u.variants.map((v) => v.rows)),
+    ...sport.sections.map((s) => s.rows),
+  ];
+  return Math.max(1, ...rows.flatMap((r) => Object.values(r)));
+}
 
 /**
  * Classic depth chart: one row per position, starters first. Same team state as the field.
- * Staff sit at the top and special teams at the bottom when the team has them (#22).
+ * Staff sit at the top and situational sections at the bottom when the team has them (#22).
  */
-export function DepthChart({ list, team, offense, defense }: Props) {
-  const usedBy = (f: Formation) => formationLabel(f);
+export function DepthChart({ list, team, sport }: Props) {
+  const columns = depthColumns(sport);
+  const staff = sport.sections.find((s) => s.kind === "staff" && team.sections?.[s.id]);
   return (
     <div className="depth-chart" data-testid="depth-chart">
-      {team.staff && (
+      {staff && (
         <SideTable
-          side="staff"
-          title="Staff"
+          side={staff.id}
+          title={staff.name}
           list={list}
-          rows={Object.fromEntries(STAFF_ROLES.map((r) => [r, 1]))}
+          rows={staff.rows}
+          columns={columns}
           wide
         />
       )}
-      <SideTable
-        side="offense"
-        title="Offense"
-        list={list}
-        rows={rowsFor("offense")}
-        starters={{
-          usedBy: usedBy(offense),
-          spots: new Set(slotsFor(offense, team.offense.qb).map((s) => refLabel(s.ref))),
-        }}
-      />
-      <SideTable
-        side="defense"
-        title={`Defense (${team.defense.front})`}
-        list={list}
-        rows={rowsFor("defense", team.defense.front)}
-        starters={{
-          usedBy: usedBy(defense),
-          spots: new Set(defense.slots.map((s) => refLabel(s.ref))),
-        }}
-      />
-      {team.specialTeams && (
-        <SideTable
-          side="specialTeams"
-          title="Special teams"
-          list={list}
-          rows={SPECIAL_TEAMS_ROWS}
-          wide
-        />
-      )}
+      {sport.units.map((unit) => {
+        const state = team.units[unit.id]!;
+        const f = findFormation(sport, state.formation);
+        const variant =
+          unit.variants.length > 1 && unit.variants.find((v) => v.id === state.variant);
+        return (
+          <SideTable
+            key={unit.id}
+            side={unit.id}
+            title={variant ? `${unit.name} (${variant.name})` : unit.name}
+            list={list}
+            rows={unitRows(unit, state.variant)}
+            columns={columns}
+            starters={
+              f && {
+                usedBy: formationLabel(f),
+                spots: new Set(
+                  slotsFor(f, state.align)
+                    .filter((s) => !s.ref.unit || s.ref.unit === unit.id)
+                    .map((s) => refLabel(s.ref)),
+                ),
+              }
+            }
+          />
+        );
+      })}
+      {sport.sections
+        .filter((s) => s.kind === "situational" && team.sections?.[s.id])
+        .map((s) => (
+          <SideTable
+            key={s.id}
+            side={s.id}
+            title={s.name}
+            list={list}
+            rows={s.rows}
+            columns={columns}
+            wide
+          />
+        ))}
     </div>
   );
 }
@@ -73,13 +93,14 @@ function SideTable(props: {
   side: Spot["side"];
   title: string;
   list: LoadedList;
-  rows: Readonly<Record<string, number>>;
+  rows: Rows;
+  columns: number;
   /** Spots the current formation uses, highlighted as starters. */
   starters?: { usedBy: string; spots: Set<string> };
   /** Span both columns of the desktop layout. */
   wide?: boolean;
 }) {
-  const { side, list, rows, starters } = props;
+  const { side, list, rows, starters, columns } = props;
   return (
     <table className={`depth-side${props.wide ? " wide" : ""}`} data-testid={`depth-${side}`}>
       <caption>
@@ -91,7 +112,7 @@ function SideTable(props: {
           <th scope="col">
             <span className="visually-hidden">Position</span>
           </th>
-          {ORDINALS.map((o) => (
+          {ORDINALS.slice(0, columns).map((o) => (
             <th key={o} scope="col">
               {o}
             </th>
@@ -102,7 +123,7 @@ function SideTable(props: {
         {Object.entries(rows).map(([pos, n]) => (
           <tr key={pos}>
             <th scope="row">{pos}</th>
-            {Array.from({ length: COLUMNS }, (_, index) => {
+            {Array.from({ length: columns }, (_, index) => {
               if (index >= n) return <td key={index} className="depth-none" />;
               const spot = { side, pos, index };
               const starter = starters?.spots.has(spotLabel(spot));
