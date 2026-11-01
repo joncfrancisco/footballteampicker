@@ -13,7 +13,6 @@ import {
   UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { CloudFrontClient, CreateInvalidationCommand } from "@aws-sdk/client-cloudfront";
-import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
 import { STSClient, GetCallerIdentityCommand } from "@aws-sdk/client-sts";
 import { mockClient } from "aws-sdk-client-mock";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -27,7 +26,6 @@ import {
   since,
   takedown,
 } from "./moderation";
-import { reportNotifier } from "./notifications";
 import { MemoryPublisher } from "./publish";
 
 const db = DynamoDBDocumentClient.from(new DynamoDBClient({ region: "us-east-1" }));
@@ -155,22 +153,6 @@ describe("moderator operations", () => {
       ExpressionAttributeValues: { ":open": "REPORT#open" },
     });
     expect(ddb.commandCalls(ScanCommand)).toHaveLength(0);
-  });
-  it("notifies the configured topic with the reported item link", async () => {
-    const sns = new SNSClient({ region: "us-east-1" });
-    const notifications = mockClient(sns);
-    notifications.on(PublishCommand).resolves({});
-    await reportNotifier(
-      "topic",
-      "depthchart.joncfrancis.co",
-      sns,
-    )({ targetId: id, targetType: "list", reason: "Prohibited image" });
-    expect(notifications.commandCalls(PublishCommand)[0]!.args[0].input).toMatchObject({
-      TopicArn: "topic",
-      Subject: "Depth Chart content report",
-      Message: expect.stringContaining(`https://depthchart.joncfrancis.co/l/${id}`),
-    });
-    notifications.restore();
   });
 });
 

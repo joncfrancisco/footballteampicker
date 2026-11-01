@@ -12,10 +12,9 @@ the reporter's salted network hash as its sort key and `status=open`; repeated r
 the same network are deduplicated until resolved. Raw IPs are never stored in reports.
 The salt is the SecureString `/footballteampicker/ip-salt`, set outside Terraform.
 
-New reports publish the item link and reason to SNS `footballteampicker-alerts`. The email
-subscription to `joncfrancisco@gmail.com` must be confirmed using the AWS confirmation email.
-A notification failure leaves the report in DynamoDB for review. Check the queue even if
-email delivery is unavailable.
+Reports are not emailed. The DynamoDB queue is the only record, and the daily moderation
+agent (`moderation/agent.md`) works it and sends one digest. `bin/moderation-queue` shows the
+same queue on demand.
 
 At three distinct open reports, a user-created list is hidden, removed from the public
 index, and its published JSON is deleted. Ordinary caches may retain it for up to 60 seconds;

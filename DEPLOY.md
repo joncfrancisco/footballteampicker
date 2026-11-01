@@ -165,8 +165,9 @@ they were built with.
 Public writes stay gated until all of these are done:
 
 - [ ] Production Turnstile widget: secret and `TURNSTILE_SITE_KEY` set, deployed (#17)
-- [ ] SNS email subscription confirmed; each #14 alarm test-fired to ALARM and back to OK with
-      emails received; kill-switch path tested per § Pause and resume writes (#14, #17)
+- [ ] SNS email subscription confirmed (ops alarms only; reports aren't emailed, #53); each
+      #14 alarm test-fired to ALARM and back to OK with emails received; kill-switch path
+      tested per § Pause and resume writes (#14, #17)
 - [ ] `app` cost-allocation tag active, so the budget sees the stack's spend (#14)
 - [ ] Load test passed and recorded in INFRA.md (§ Load-test window, #18)
 - [ ] Single-IP flood gets WAF 403s within five minutes (`loadtest/flood.js`, #17)

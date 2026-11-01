@@ -14,10 +14,8 @@ let store: MemoryStore;
 let publish: MemoryPublisher;
 let human: ReturnType<typeof vi.fn<HumanCheck>>;
 let api: ReturnType<typeof createApi>;
-const notifications: unknown[] = [];
 
 beforeEach(() => {
-  notifications.length = 0;
   store = new MemoryStore();
   publish = new MemoryPublisher();
   human = vi.fn<HumanCheck>(async (token) => (token === "ok" ? "ok" : "failed"));
@@ -29,9 +27,6 @@ beforeEach(() => {
     seeds: [seed],
     now: () => new Date("2026-11-01T00:00:00Z"),
     ipSalt: "test-only-salt",
-    notifyReport: async (report) => {
-      notifications.push(report);
-    },
   });
 });
 
@@ -438,7 +433,7 @@ describe("reports", () => {
     expect(store.reports[0]!.ipHash).toMatch(/^[0-9a-f]{64}$/);
   });
 
-  it("deduplicates networks, notifies once per reporter, and hides a list after three reports", async () => {
+  it("deduplicates networks and hides a list after three reports", async () => {
     const created = await call("POST", "/api/lists", LIST);
     const id = created.body.id as string;
     const report = { targetId: id, targetType: "list", reason: "Prohibited image" };
@@ -448,7 +443,6 @@ describe("reports", () => {
       );
     }
     expect(store.reports).toHaveLength(3);
-    expect(notifications).toHaveLength(3);
     expect(store.lists.get(id)?.hidden).toBe(true);
     expect(publish.json(`m/l/${id}.json`)).toBeUndefined();
     expect(publish.json("m/browse/index.json")).toMatchObject({ lists: [] });

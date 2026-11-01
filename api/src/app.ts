@@ -34,11 +34,6 @@ export type Deps = {
   /** Salt for hashing reporter IPs. */
   ipSalt?: string;
   reporterSalt?: () => Promise<string | undefined>;
-  notifyReport?: (report: {
-    targetType: "list" | "team";
-    targetId: string;
-    reason: string;
-  }) => Promise<void>;
   /**
    * Load-test window only (#18): a request carrying this secret in `x-loadtest-token` skips
    * Turnstile and the app rate limits. Absent in normal production, so nothing is skipped.
@@ -250,7 +245,7 @@ export function createApi(deps: Deps) {
     if (!exists) throw new HttpError(404, { error: "not_found" });
     const salt = deps.reporterSalt ? await deps.reporterSalt() : deps.ipSalt;
     if (!salt) throw new HttpError(503, { error: "reports_unavailable" });
-    const fresh = await deps.store.putReport({
+    await deps.store.putReport({
       ...input,
       ipHash: sha256(`${salt}:${clientIp(event)}`),
       createdAt: now(),
@@ -264,7 +259,6 @@ export function createApi(deps: Deps) {
       await deps.publish.delete(`m/l/${input.targetId}.json`);
       await rebuildBrowse(input.targetId);
     }
-    if (fresh) await deps.notifyReport?.(input);
     return json(204);
   }
 
