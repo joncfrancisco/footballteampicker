@@ -143,6 +143,14 @@ export function teamErrors(team: Team, roster: Roster): string[] {
     const state = team.units[unit.id];
     if (!state) continue; // reported by shapeErrors
     const name = unit.name.toLowerCase();
+    if (state.order) {
+      const ids = (unit.battingOrder?.[state.variant ?? unit.variants[0]!.id] ?? []).map(
+        (o) => o.id,
+      );
+      if (!ids.length) out.push(`${unit.name} has no batting order`);
+      else if ([...state.order].sort().join() !== [...ids].sort().join())
+        out.push(`Batting order must list ${ids.join(", ")} once each`);
+    }
     const hasFormations = sport.formations.some((f) => f.unit === unit.id);
     if (state.formation === undefined) {
       if (hasFormations) out.push(`Missing ${name} formation`);

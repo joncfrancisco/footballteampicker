@@ -27,6 +27,22 @@ export function depthColumns(sport: SportDef): number {
   return Math.max(1, ...rows.flatMap((r) => Object.values(r)));
 }
 
+/** Spots in this unit that a formation on show uses, from any unit's formation. */
+function starters(sport: SportDef, team: Team, unitId: string) {
+  const used = sport.units.flatMap((u) => {
+    const state = team.units[u.id]!;
+    const f = findFormation(sport, state.formation);
+    if (!f) return [];
+    const spots = slotsFor(f, state.align).filter((s) => (s.ref.unit ?? u.id) === unitId);
+    return spots.length ? [{ f, spots }] : [];
+  });
+  if (!used.length) return undefined;
+  return {
+    usedBy: used.map((u) => formationLabel(u.f)).join(", "),
+    spots: new Set(used.flatMap((u) => u.spots.map((s) => refLabel(s.ref)))),
+  };
+}
+
 /**
  * Classic depth chart: one row per position, starters first. Same team state as the field.
  * Staff sit at the top and situational sections at the bottom when the team has them (#22).
@@ -48,7 +64,6 @@ export function DepthChart({ list, team, sport }: Props) {
       )}
       {sport.units.map((unit) => {
         const state = team.units[unit.id]!;
-        const f = findFormation(sport, state.formation);
         const variant =
           unit.variants.length > 1 && unit.variants.find((v) => v.id === state.variant);
         return (
@@ -59,16 +74,7 @@ export function DepthChart({ list, team, sport }: Props) {
             list={list}
             rows={unitRows(unit, state.variant)}
             columns={columns}
-            starters={
-              f && {
-                usedBy: formationLabel(f),
-                spots: new Set(
-                  slotsFor(f, state.align)
-                    .filter((s) => !s.ref.unit || s.ref.unit === unit.id)
-                    .map((s) => refLabel(s.ref)),
-                ),
-              }
-            }
+            starters={starters(sport, team, unit.id)}
           />
         );
       })}

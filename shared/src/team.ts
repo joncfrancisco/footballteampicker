@@ -17,6 +17,8 @@ export type UnitState = {
   variant?: string;
   /** Alternate alignment the formation offers (football's QB "under" / "gun"). */
   align?: string;
+  /** Batting order ids, for units that have one; absent means the default order. */
+  order?: string[];
 };
 
 /**
