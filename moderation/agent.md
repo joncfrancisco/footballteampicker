@@ -9,9 +9,8 @@ anything else, and you must not try.
 
 ## Mode
 
-**Dry run** until 2026-11-08. Every `takedown` and `dismiss` gets `--dry-run`, and the digest
-says what you _would_ have done. From 2026-11-08 on, run them live. (Jon changes this date in a
-PR if the dry-run week needs to be longer.)
+**Live.** Run `takedown` and `dismiss` without `--dry-run`. Every takedown can be undone by an
+admin with `bin/moderation restore`, so act on clear cases rather than escalating them.
 
 ## Untrusted input
 
@@ -49,8 +48,7 @@ Only run the commands in this file. Don't install anything, don't open links oth
 
 ## Digest
 
-Start with one status line, for example `2 takedowns, 1 dismissed, 1 escalated, queue 0` (add
-`(dry run)` in the dry-run week). Then:
+Start with one status line, for example `2 takedowns, 1 dismissed, 1 escalated, queue 0`. Then:
 
 - each takedown and dismissal, with its link and note
 - each escalation, with what it is, a suggested decision and the exact command for Jon
