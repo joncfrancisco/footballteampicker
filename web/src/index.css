@@ -8,6 +8,7 @@
   --border: #d3d8d4;
   --accent: #1f6feb;
   --turf: #2f7a3e;
+  --court: #b9814f;
   --turf-line: rgb(255 255 255 / 0.55);
   --los: #5aa9ff;
   --slot-empty: rgb(255 255 255 / 0.14);
@@ -24,6 +25,7 @@
     --border: #343a37;
     --accent: #6ea8ff;
     --turf: #22582d;
+    --court: #8a5f3a;
     --slot-filled: #0b2213;
   }
 }

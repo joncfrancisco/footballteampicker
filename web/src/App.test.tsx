@@ -119,3 +119,37 @@ describe("sports (#44)", () => {
     expect(tile("PEN")).toHaveAccessibleName("Ahri, set pieces PEN");
   });
 });
+
+describe("basketball (#63)", () => {
+  beforeEach(() => window.history.replaceState(null, "", "/build/demo-lol?sport=basketball"));
+
+  it("puts the starting five on the court, three deep in the depth chart", () => {
+    render(<App />);
+    const court = screen.getByTestId("field-roster");
+    const refs = [...court.querySelectorAll(".slot")].map((s) => (s as HTMLElement).dataset.ref);
+    expect(refs.sort()).toEqual(["C1", "PF1", "PG1", "SF1", "SG1"]);
+    fireEvent.change(screen.getByRole("combobox", { name: "Roster" }), {
+      target: { value: "basketball-second" },
+    });
+    expect(screen.getByTestId("field-roster").querySelector('[data-slot="pg"]')).toHaveAttribute(
+      "data-ref",
+      "PG2",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Depth chart" }));
+    expect(screen.getByTestId("depth-roster").querySelectorAll("[data-spot]")).toHaveLength(15);
+  });
+
+  it("closing five takes anyone from the roster, once each", () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole("button", { name: "+ Closing five" }));
+    const card = within(screen.getByTestId("pool")).getByRole("button", { name: /^Ahri/ });
+    const tile = (spot: string) =>
+      screen.getByTestId("closing").querySelector(`[data-spot="${spot}"]`) as HTMLElement;
+    fireEvent.click(card);
+    fireEvent.click(tile("CL1"));
+    fireEvent.click(card);
+    fireEvent.click(tile("CL3"));
+    expect(tile("CL1")).toHaveAccessibleName("Empty closing five CL1");
+    expect(tile("CL3")).toHaveAccessibleName("Ahri, closing five CL3");
+  });
+});
