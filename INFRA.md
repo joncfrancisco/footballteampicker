@@ -84,6 +84,8 @@ it exists, writes answer 503 `writes_unavailable` (fail closed).
   `m/t/<id>.json` (immutable), `m/l/<id>.json` and `m/browse/index.json` (`max-age=60`),
   list atlases under `m/img/<listId>/atlas-<hash>.webp` (or `.jpg`). The API never invalidates: lists and browse catch up
   within a minute and teams never change. Takedowns invalidate from the admin script (#13).
+- Published teams carry `schema`: 1 for football teams saved before #44 (offense/defense
+  shape), 2 for every team since (`sport`, `units`, `sections`). Both are read forever.
 - Saved seed teams use `m/seeds/<seedId>/atlas-<hash>.webp`. Deploy uploads new seed atlases
   without deleting old ones, so a saved team keeps its original portraits across seed updates.
 
@@ -101,7 +103,8 @@ tokens are never replayed. An unchanged team reuses the last saved ID in this br
 
 Shared teams read `/m/t/<id>.json` and render their saved character snapshot, including names,
 two-way flags and atlas tiles. Formation/view changes stay local. Remix separately loads the
-current list, clears removed characters, and keeps offense when a two-way flag was disabled.
+current list, clears removed characters, and keeps the first unit (offense, pitchers) when a
+two-way flag was disabled.
 
 ## Character-list uploads
 
@@ -227,7 +230,7 @@ would be ~19M requests a month.
 | Reads       | All S3 via CloudFront `/m/*`; viewing, browsing and search never invoke Lambda                                    |
 | API Lambda  | Reserved concurrency 50; at 25 a 100-share burst took ~5 s and all 3 retries (see Results)                        |
 | Client      | Share retries a 429/503 up to 3 times with jittered backoff and a fresh Turnstile token (§ Sharing configuration) |
-| DynamoDB    | On-demand. A full team is ~1.1 KB (2 WRU), a 150-character list ~25 WRU                                           |
+| DynamoDB    | On-demand. A full football team is ~1.1 KB (2 WRU), the largest sport; a 150-character list ~25 WRU               |
 | Kill switch | Trips at 50,000 invocations/hour or 100,000 WRU/hour; peak is ~2,000 invocations/hour                             |
 
 **Upgrade trigger:** if the plan's 50/80/100% usage emails show a month staying over the

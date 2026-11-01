@@ -1,4 +1,4 @@
-import { DEFAULT_SPORT, SPORTS, newTeam, sportById, type Team } from "@ftp/shared";
+import { SPORTS, newTeam, type Team } from "@ftp/shared";
 import { useEffect, useState } from "react";
 import { Builder } from "./Builder";
 import { demoTeam } from "./demo";
@@ -8,14 +8,13 @@ import type { LoadedList } from "./lists";
 import { Catalog, ListPage, NotFound } from "./Catalog";
 import { TeamPage, RemixBuilder } from "./TeamPage";
 import { ShareMenu } from "./ShareMenu";
+import { SportPicker, setUrlSport, urlSport } from "./SportPicker";
 import { EditorPage } from "./editor/Editor";
 import { About, ReportPage } from "./Policy";
 
 // ?fill=demo (&sections=1) is for screenshots and checks; it never touches the saved draft.
 const params = () => new URLSearchParams(window.location.search);
 const isDemo = () => params().get("fill") === "demo";
-/** ?sport= picks the builder's sport; football by default (#44). */
-const urlSport = () => sportById(params().get("sport") ?? undefined)?.id ?? DEFAULT_SPORT;
 
 export function App() {
   const path = window.location.pathname;
@@ -101,11 +100,7 @@ function TeamBuilder({
 
   /** Each sport keeps its own draft; the URL says which one is open (/build/<list>?sport=). */
   const pickSport = (sport: string) => {
-    const url = new URL(location.href);
-    if (sport === DEFAULT_SPORT) url.searchParams.delete("sport");
-    else url.searchParams.set("sport", sport);
-    url.searchParams.delete("remix");
-    history.replaceState(null, "", url);
+    setUrlSport(sport, ["remix"]);
     setTeam(start(sport));
   };
 
@@ -129,24 +124,5 @@ function TeamBuilder({
         <p className="disclaimer">{list.disclaimer}</p>
       )}
     </>
-  );
-}
-
-/** Pick the sport first: the team, field, rules and formations all follow it. */
-function SportPicker({ value, onChange }: { value: string; onChange: (sport: string) => void }) {
-  return (
-    <div className="sport-picker" role="radiogroup" aria-label="Sport">
-      {SPORTS.map((s) => (
-        <button
-          key={s.id}
-          type="button"
-          role="radio"
-          aria-checked={s.id === value}
-          onClick={() => s.id !== value && onChange(s.id)}
-        >
-          {s.name}
-        </button>
-      ))}
-    </div>
   );
 }

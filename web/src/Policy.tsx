@@ -7,8 +7,9 @@ export function About() {
     <section className="catalog policy">
       <h2>About Depth Chart</h2>
       <p>
-        Pick a character list, build a football depth chart, and share your lineup by link or image.
-        There are no accounts, ads, paywalls, or donations.
+        Pick a character list and a sport (football, soccer, basketball, hockey or baseball), build
+        a depth chart, and share your lineup by link or image. There are no accounts, ads, paywalls,
+        or donations.
       </p>
       <h3>Content rules</h3>
       <p>

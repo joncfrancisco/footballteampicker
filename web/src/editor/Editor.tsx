@@ -285,8 +285,8 @@ function Editor({
             : "Create a character list"}
       </h2>
       <p>
-        Two-way players can fill one offense and one defense spot. Everyone else plays once per
-        team.
+        Two-way players can hold spots in two units: offense and defense in football, pitching and
+        hitting in baseball. Everyone else plays once per team.
       </p>
       {initial?.disclaimer && <p className="card-disclaimer">{initial.disclaimer}</p>}
       <fieldset disabled={busy}>
@@ -360,8 +360,8 @@ function Editor({
         </p>
         {characters.length + twoWay < 22 && (
           <p className="notice">
-            This roster may not fill all 22 offense and defense spots. Add more characters or enable
-            two-way players.
+            This roster may not fill a football team's 22 offense and defense starters. Add more
+            characters or enable two-way players.
           </p>
         )}
         <div className="actions">

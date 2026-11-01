@@ -107,3 +107,17 @@ describe("discovery", () => {
     expect(document.body.innerHTML).not.toContain("private-edit-token");
   });
 });
+
+describe("sport chips (#44)", () => {
+  it("carry the chosen sport from home to the list and on to the builder", () => {
+    window.history.replaceState(null, "", "/");
+    render(<App />);
+    fireEvent.click(screen.getByRole("radio", { name: "Hockey" }));
+    expect(location.search).toBe("?sport=hockey");
+    const card = screen
+      .getAllByRole("link")
+      .find((a) => a.getAttribute("href")?.startsWith("/l/"))!;
+    expect(card.getAttribute("href")).toMatch(/\?sport=hockey$/);
+    window.history.replaceState(null, "", "/");
+  });
+});
