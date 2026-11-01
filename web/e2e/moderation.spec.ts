@@ -23,9 +23,8 @@ test("report a list and read the policy", async ({ page }) => {
   ).toBeVisible();
   await page.getByRole("link", { name: "About & content rules" }).click();
   await expect(page.getByRole("heading", { name: "Content rules" })).toBeVisible();
-  await expect(
-    page.getByRole("link", { name: "contact the site owner", exact: true }),
-  ).toHaveAttribute("href", /mailto:/);
+  await expect(page.getByText("For copyright/DMCA requests or an appeal")).toBeVisible();
+  await expect(page.locator('a[href^="mailto:"]')).toHaveCount(0);
 });
 
 test("three distinct reports hide a public list and remove it from browse", async ({
