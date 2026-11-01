@@ -117,7 +117,7 @@ const GRIDIRON: SurfaceDef = {
   noun: "Field",
   background: "var(--turf)",
   paint: {
-    bg: "#2f7a3e",
+    bg: "#25a244",
     line: "rgba(255,255,255,0.55)",
     fill: "rgba(255,255,255,0.18)",
     accent: "#5aa9ff",
@@ -223,7 +223,7 @@ const COURT: SurfaceDef = {
   aspect: COURT_ASPECT,
   background: "var(--court)",
   paint: {
-    bg: "#b9814f",
+    bg: "#c98a4b",
     line: "rgba(255,255,255,0.8)",
     fill: "rgba(120,40,20,0.35)",
     accent: "#fff",
