@@ -285,6 +285,10 @@ Still to record: Free plan usage before and after.
   policies, so the CSP is a build-time `<meta>` and cache lifetimes come from the objects'
   `Cache-Control`. At most 5 behaviours (all used) and 5 WAF rules; no WAF CAPTCHA (hence
   Turnstile); the web ACL can't be removed while subscribed.
+- **Free plan: no WAF logging.** `PutLoggingConfiguration` fails with
+  `WAFFeatureNotIncludedInPricingPlanException` (#80, reverted in #81), and a failed apply
+  blocks every deploy from `main`. Traffic is visible only as WAF and CloudFront metrics, plus
+  WAF sampled requests (up to 100 per rule from the last 3 hours). Logging needs Pro.
 - **Reserved concurrency is outside Terraform's control** (`ignore_changes`), so a deploy never
   undoes a kill-switch pause. `bin/killswitch off` is the only way back to 25.
 - **The boundary is bootstrap-owned.** A new AWS permission for the API needs both
