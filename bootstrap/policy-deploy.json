@@ -42,20 +42,6 @@
       ]
     },
     {
-      "Sid": "WafLogDelivery",
-      "Effect": "Allow",
-      "Action": [
-        "logs:CreateLogDelivery",
-        "logs:DeleteLogDelivery",
-        "logs:GetLogDelivery",
-        "logs:ListLogDeliveries",
-        "logs:PutResourcePolicy",
-        "logs:DeleteResourcePolicy",
-        "logs:DescribeResourcePolicies"
-      ],
-      "Resource": "*"
-    },
-    {
       "Sid": "OwnAlarmsTopicsBudgets",
       "Effect": "Allow",
       "Action": ["cloudwatch:*", "sns:*", "budgets:*"],
