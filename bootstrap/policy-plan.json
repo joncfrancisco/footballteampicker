@@ -102,7 +102,6 @@
         "wafv2:CheckCapacity",
         "wafv2:GetWebACLForResource",
         "logs:DescribeLogGroups",
-        "logs:DescribeResourcePolicies",
         "cloudwatch:DescribeAlarms",
         "lambda:GetAccountSettings",
         "dynamodb:ListTables",
