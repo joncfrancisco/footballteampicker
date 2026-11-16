@@ -131,3 +131,45 @@ resource "aws_wafv2_web_acl" "site" {
     sampled_requests_enabled   = true
   }
 }
+
+# Per-request WAF logs (who was blocked or allowed, and why). The name must start with
+# aws-waf-logs-. A few thousand requests a week is well under a megabyte a day.
+resource "aws_cloudwatch_log_group" "waf" {
+  name              = "aws-waf-logs-footballteampicker"
+  retention_in_days = 30
+}
+
+# WAF delivers through the log delivery service, which needs this account-level policy.
+# Owning it here stops WAF from writing its own catch-all AWSWAF-LOGS policy.
+data "aws_iam_policy_document" "waf_logs" {
+  statement {
+    principals {
+      type        = "Service"
+      identifiers = ["delivery.logs.amazonaws.com"]
+    }
+    actions   = ["logs:CreateLogStream", "logs:PutLogEvents"]
+    resources = ["${aws_cloudwatch_log_group.waf.arn}:*"]
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [data.aws_caller_identity.current.account_id]
+    }
+    condition {
+      test     = "ArnLike"
+      variable = "aws:SourceArn"
+      values   = ["arn:aws:logs:us-east-1:${data.aws_caller_identity.current.account_id}:*"]
+    }
+  }
+}
+
+resource "aws_cloudwatch_log_resource_policy" "waf" {
+  policy_name     = "footballteampicker-waf-logs"
+  policy_document = data.aws_iam_policy_document.waf_logs.json
+}
+
+resource "aws_wafv2_web_acl_logging_configuration" "site" {
+  resource_arn            = aws_wafv2_web_acl.site.arn
+  log_destination_configs = [aws_cloudwatch_log_group.waf.arn]
+
+  depends_on = [aws_cloudwatch_log_resource_policy.waf]
+}
